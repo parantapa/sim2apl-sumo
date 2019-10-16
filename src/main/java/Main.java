@@ -4,7 +4,6 @@ import sumo.EnvironmentAgentInterface;
 public class Main {
 
     public static void main(String[] args) {
-
         CommandLine parsedArguments = Main.parseArguments(args);
         EnvironmentAgentInterface environmentAgentInterface = new EnvironmentAgentInterface(parsedArguments);
     }
@@ -53,6 +52,15 @@ public class Main {
                 .desc("Load road network description from FILE")
                 .build();
 
+        final Option nCars = Option.builder()
+                .argName("number of cars")
+                .hasArg()
+                .longOpt("number-of-cars")
+                .required()
+                .type(Integer.TYPE)
+                .desc("The number of cars to place in the environment")
+                .build();
+
         final Option stepLength = Option.builder()
                 .argName("Step length in seconds")
                 .hasArg()
@@ -80,15 +88,6 @@ public class Main {
                 .desc("The seed to use for Random, so reproducibility can be ensured")
                 .build();
 
-        final Option nCars = Option.builder()
-                .argName("number of cars")
-                .hasArg()
-                .longOpt("number-of-cars")
-                .required()
-                .type(Integer.TYPE)
-                .desc("The number of cars to place in the environment")
-                .build();
-
         final Option nIterations = Option.builder("i")
                 .argName("number of iterations")
                 .hasArg()
@@ -110,14 +109,15 @@ public class Main {
                 .build();
 
         final Options options = new Options();
+        
         options.addOption(sumoBinary);
         options.addOption(config);
         options.addOption(netFile);
+        options.addOption(nCars);
+        options.addOption(nIterations);
         options.addOption(stepLength);
         options.addOption(collisionAction);
         options.addOption(seed);
-        options.addOption(nCars);
-        options.addOption(nIterations);
         options.addOption(statistics);
 
         return options;

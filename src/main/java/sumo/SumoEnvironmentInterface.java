@@ -15,7 +15,10 @@ import org.uu.nl.sim2apl.core.agent.AgentID;
 import org.uu.nl.sim2apl.core.tick.TickHookProcessor;
 
 import java.io.File;
+import java.net.URI;
 import java.net.URL;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -36,7 +39,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
     private final String configFile;
     private final String netFile;
     private String collisionAction = "none";
-    private String stepLength = "0";
+    private String stepLength = "1";
 
     /**
      * A Java Random object, to make random choices deterministic (if seed provided)
@@ -316,8 +319,18 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
     private String convertRelativeToAbsolutePath(String configname) {
         System.out.println("Trying to resolve " + configname);
         URL resourceURL = getClass().getClassLoader().getResource(configname);
-        if (resourceURL != null) {
+        if(new File(configname).exists()) {
+            // Path was absolute
+            return configname;
+        } else if (resourceURL != null) {
+            // Resource file was provided. Convert to absolute path
             return new File(resourceURL.getPath()).getAbsolutePath();
+        } else {
+            // File is not a resource
+            Path path = new File(".").toPath().resolve(configname);
+            if(path.toFile().exists()) {
+                return path.toAbsolutePath().toString();
+            }
         }
 
         return null;
