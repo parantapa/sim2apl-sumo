@@ -47,6 +47,8 @@
                     <compilerArgs>
                         <arg>-Xlint:all,-options,-path</arg>
                     </compilerArgs>
+                    <source>12</source>
+                    <target>12</target>
                 </configuration>
             </plugin>
             <plugin>

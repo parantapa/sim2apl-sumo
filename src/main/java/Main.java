@@ -109,7 +109,7 @@ public class Main {
                 .build();
 
         final Options options = new Options();
-        
+
         options.addOption(sumoBinary);
         options.addOption(config);
         options.addOption(netFile);
