@@ -1,0 +1,6 @@
+*.csv
+*.log
+statistics
+target
+.idea
+*.iml
