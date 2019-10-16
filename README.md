@@ -31,6 +31,8 @@ $ mvn install
 Now, both Sim2APL and TraaS should be added to your local Maven repository, and you are ready to use the software. Clone this repository, and either open it in your favourite Java IDE, or install using maven and run the jar with dependencies.
 
 ```
+$ git clone https://bitbucket.org/goldenagents/sim2apl-sumo.git
+$ cd sim2apl-sumo
 $ mvn install
 $ java -jar target/sim2apl-SUMO-simulation-1.0-SNAPSHOT-jar-with-dependencies.jar -s sumo-gui -c src/main/resources/eichstaedt/eichstaedt.sumo.cfg --step-length 1 --number-of-cars 20
 ```
