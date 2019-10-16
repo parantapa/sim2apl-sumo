@@ -20,9 +20,14 @@
 
     <dependencies>
         <dependency>
-            <groupId>ga.iss.org.uu.nl</groupId>
+            <groupId>nl.uu.iss.ga</groupId>
             <artifactId>sim2apl</artifactId>
             <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>de.tudresden</groupId>
+            <artifactId>traas</artifactId>
+            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
