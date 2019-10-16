@@ -4,9 +4,9 @@ import agent.context.CarContext;
 import de.tudresden.sumo.cmd.Route;
 import de.tudresden.sumo.util.SumoCommand;
 import de.tudresden.ws.container.SumoStage;
-import org.uu.nl.sim2apl.core.agent.PlanToAgentInterface;
-import org.uu.nl.sim2apl.core.plan.Plan;
-import org.uu.nl.sim2apl.core.plan.PlanExecutionError;
+import nl.uu.cs.iss.ga.sim2apl.core.agent.PlanToAgentInterface;
+import nl.uu.cs.iss.ga.sim2apl.core.plan.Plan;
+import nl.uu.cs.iss.ga.sim2apl.core.plan.PlanExecutionError;
 import sumo.EnvironmentAgentInterface;
 
 /**

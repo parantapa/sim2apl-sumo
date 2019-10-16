@@ -1,12 +1,12 @@
 package agent.plan;
 
 import agent.context.CarContext;
-import agent.trigger.goal.AdjustCo2BasedSpeedMaintainanceGoal;
+import agent.trigger.goal.AdjustCo2BasedSpeedMaintenanceGoal;
 import de.tudresden.sumo.cmd.Vehicle;
 import de.tudresden.sumo.util.SumoCommand;
-import org.uu.nl.sim2apl.core.agent.PlanToAgentInterface;
-import org.uu.nl.sim2apl.core.plan.Plan;
-import org.uu.nl.sim2apl.core.plan.PlanExecutionError;
+import nl.uu.cs.iss.ga.sim2apl.core.agent.PlanToAgentInterface;
+import nl.uu.cs.iss.ga.sim2apl.core.plan.Plan;
+import nl.uu.cs.iss.ga.sim2apl.core.plan.PlanExecutionError;
 import sumo.EnvironmentAgentInterface;
 
 /**
@@ -32,7 +32,7 @@ public class EnterWorldPlan extends Plan {
         );
 
 //        planToAgentInterface.adoptGoal(new AdjustCo2BasedAccelerationMaintainanceGoal());
-        planToAgentInterface.adoptGoal(new AdjustCo2BasedSpeedMaintainanceGoal());
+        planToAgentInterface.adoptGoal(new AdjustCo2BasedSpeedMaintenanceGoal());
 
         setFinished(true);
         return enter;

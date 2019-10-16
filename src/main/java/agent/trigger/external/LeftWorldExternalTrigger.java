@@ -1,6 +1,6 @@
 package agent.trigger.external;
 
-import org.uu.nl.sim2apl.core.agent.Trigger;
+import nl.uu.cs.iss.ga.sim2apl.core.agent.Trigger;
 
 public class LeftWorldExternalTrigger implements Trigger {
 }

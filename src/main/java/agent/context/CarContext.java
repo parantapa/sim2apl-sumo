@@ -1,7 +1,7 @@
 package agent.context;
 
 import agent.SumoCar2APLAgent;
-import org.uu.nl.sim2apl.core.agent.Context;
+import nl.uu.cs.iss.ga.sim2apl.core.agent.Context;
 import sumo.EnvironmentAgentInterface;
 
 import java.util.LinkedList;

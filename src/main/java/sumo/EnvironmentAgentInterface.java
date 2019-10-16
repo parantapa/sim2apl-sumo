@@ -9,14 +9,14 @@ import agent.planscheme.SumoCarExternalTriggerPlanScheme;
 import agent.planscheme.SumoCarGoalPlanScheme;
 import agent.trigger.external.EnteredWorldExternalTrigger;
 import agent.trigger.external.LeftWorldExternalTrigger;
+import nl.uu.cs.iss.ga.sim2apl.core.agent.Agent;
+import nl.uu.cs.iss.ga.sim2apl.core.agent.AgentArguments;
+import nl.uu.cs.iss.ga.sim2apl.core.agent.AgentID;
+import nl.uu.cs.iss.ga.sim2apl.core.fipa.FIPAMessenger;
+import nl.uu.cs.iss.ga.sim2apl.core.messaging.Messenger;
+import nl.uu.cs.iss.ga.sim2apl.core.platform.Platform;
+import nl.uu.cs.iss.ga.sim2apl.core.tick.DefaultSimulationEngine;
 import org.apache.commons.cli.CommandLine;
-import org.uu.nl.sim2apl.core.agent.Agent;
-import org.uu.nl.sim2apl.core.agent.AgentArguments;
-import org.uu.nl.sim2apl.core.agent.AgentID;
-import org.uu.nl.sim2apl.core.fipa.FIPAMessenger;
-import org.uu.nl.sim2apl.core.messaging.Messenger;
-import org.uu.nl.sim2apl.core.platform.Platform;
-import org.uu.nl.sim2apl.core.tick.DefaultSimulationEngine;
 
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -31,22 +31,19 @@ import java.util.Map;
 public class EnvironmentAgentInterface {
 
     /**
-     * Basic Simulation classess
+     * Basic Simulation classes
      **/
     private Platform platform;
-    private Messenger messenger;
     private SumoEnvironmentInterface environmentInterface;
-
-    private long nIterations = Long.MAX_VALUE; // TODO, engine should just use WHILE loop if 0
 
     /** **/
     private final int desiredNOfCars;
     private int routesCounter = 0;
 
     /**
-     * Maps to map agents from SUMO to 2APL and vice versa
+     * Maps to map agents from SUMO to 2APL. Vice versa is not required, since SUMO-ID is present
+     * on the SumoAPLAgent interface
      **/
-    private Map<AgentID, SumoAPLAgent> aplAgents = new HashMap<>();
     private Map<String, SumoAPLAgent> sumoAgents = new HashMap<>();
 
     /**
@@ -57,16 +54,16 @@ public class EnvironmentAgentInterface {
      */
     public EnvironmentAgentInterface(CommandLine parsedArguments) {
         this.desiredNOfCars = Integer.parseInt(parsedArguments.getOptionValue("number-of-cars"));
+        int nIterations = -1;
         if (parsedArguments.hasOption("number-of-iterations"))
-            this.nIterations = Long.parseLong(parsedArguments.getOptionValue("number-of-iterations"));
+            nIterations = Integer.parseInt(parsedArguments.getOptionValue("number-of-iterations"));
 
-        this.messenger = new FIPAMessenger();
-        this.platform = Platform.newPlatform(4, this.messenger);
+        this.platform = Platform.newPlatform(4, new FIPAMessenger());
         this.environmentInterface = new SumoEnvironmentInterface(parsedArguments);
         this.environmentInterface.addEnvironmentListener(this);
         createInitialAgents();
 
-        DefaultSimulationEngine engine = new DefaultSimulationEngine(platform, this.environmentInterface, this.nIterations);
+        DefaultSimulationEngine engine = new DefaultSimulationEngine(platform, nIterations, this.environmentInterface);
         engine.start();
     }
 
@@ -107,7 +104,6 @@ public class EnvironmentAgentInterface {
         for (int i = 0; i < this.desiredNOfCars; i++) {
             SumoAPLAgent agent = InstantiateAgent(i);
             if (agent != null) {
-                this.aplAgents.put(agent.getAgentID(), agent);
                 this.sumoAgents.put(agent.getSumoID(), agent);
             }
         }

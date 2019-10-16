@@ -1,7 +1,7 @@
 package agent.trigger.goal;
 
-import org.uu.nl.sim2apl.core.agent.AgentContextInterface;
-import org.uu.nl.sim2apl.core.agent.Goal;
+import nl.uu.cs.iss.ga.sim2apl.core.agent.AgentContextInterface;
+import nl.uu.cs.iss.ga.sim2apl.core.agent.Goal;
 
 public class AdjustCo2BasedAccelerationMaintainanceGoal extends Goal {
 

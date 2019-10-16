@@ -1,13 +1,13 @@
 package agent.planscheme;
 
 import agent.plan.AdjustCO2BasedAccelerationPlan;
-import agent.trigger.goal.AdjustCo2BasedAccelerationMaintainanceGoal;
-import agent.trigger.goal.AdjustCo2BasedSpeedMaintainanceGoal;
 import agent.plan.AdjustCo2BasedSpeedPlan;
-import org.uu.nl.sim2apl.core.agent.AgentContextInterface;
-import org.uu.nl.sim2apl.core.agent.Trigger;
-import org.uu.nl.sim2apl.core.plan.Plan;
-import org.uu.nl.sim2apl.core.plan.PlanScheme;
+import agent.trigger.goal.AdjustCo2BasedAccelerationMaintainanceGoal;
+import agent.trigger.goal.AdjustCo2BasedSpeedMaintenanceGoal;
+import nl.uu.cs.iss.ga.sim2apl.core.agent.AgentContextInterface;
+import nl.uu.cs.iss.ga.sim2apl.core.agent.Trigger;
+import nl.uu.cs.iss.ga.sim2apl.core.plan.Plan;
+import nl.uu.cs.iss.ga.sim2apl.core.plan.PlanScheme;
 
 public class SumoCarGoalPlanScheme implements PlanScheme {
 
@@ -15,7 +15,7 @@ public class SumoCarGoalPlanScheme implements PlanScheme {
     public Plan instantiate(Trigger trigger, AgentContextInterface agentContextInterface) {
         Plan plan = Plan.UNINSTANTIATED;
 
-        if(trigger instanceof AdjustCo2BasedSpeedMaintainanceGoal) {
+        if(trigger instanceof AdjustCo2BasedSpeedMaintenanceGoal) {
             plan = new AdjustCo2BasedSpeedPlan();
         } else if(trigger instanceof AdjustCo2BasedAccelerationMaintainanceGoal) {
             plan = new AdjustCO2BasedAccelerationPlan();

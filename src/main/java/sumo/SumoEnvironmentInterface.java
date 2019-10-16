@@ -10,14 +10,12 @@ import de.tudresden.ws.container.SumoPosition3D;
 import de.tudresden.ws.container.SumoStage;
 import it.polito.appeal.traci.SumoTraciConnection;
 import it.polito.appeal.traci.TraCIException;
+import nl.uu.cs.iss.ga.sim2apl.core.agent.AgentID;
+import nl.uu.cs.iss.ga.sim2apl.core.tick.TickHookProcessor;
 import org.apache.commons.cli.CommandLine;
-import org.uu.nl.sim2apl.core.agent.AgentID;
-import org.uu.nl.sim2apl.core.tick.TickHookProcessor;
 
 import java.io.File;
-import java.net.URI;
 import java.net.URL;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.*;
 

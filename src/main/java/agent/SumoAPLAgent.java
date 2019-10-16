@@ -1,7 +1,7 @@
 package agent;
 
-import org.uu.nl.sim2apl.core.agent.Agent;
-import org.uu.nl.sim2apl.core.agent.AgentID;
+import nl.uu.cs.iss.ga.sim2apl.core.agent.Agent;
+import nl.uu.cs.iss.ga.sim2apl.core.agent.AgentID;
 
 /**
  * A wrapper object that stores a reference to both a 2APL agent and a SUMO agent
