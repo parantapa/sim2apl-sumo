@@ -13,7 +13,6 @@ import nl.uu.cs.iss.ga.sim2apl.core.agent.Agent;
 import nl.uu.cs.iss.ga.sim2apl.core.agent.AgentArguments;
 import nl.uu.cs.iss.ga.sim2apl.core.agent.AgentID;
 import nl.uu.cs.iss.ga.sim2apl.core.fipa.FIPAMessenger;
-import nl.uu.cs.iss.ga.sim2apl.core.messaging.Messenger;
 import nl.uu.cs.iss.ga.sim2apl.core.platform.Platform;
 import nl.uu.cs.iss.ga.sim2apl.core.tick.DefaultSimulationEngine;
 import org.apache.commons.cli.CommandLine;
@@ -150,8 +149,10 @@ public class EnvironmentAgentInterface {
     void notifyAgentsArrived(List<String> arrivedAgents) {
         arrivedAgents.forEach(ra -> {
             SumoAPLAgent agentInterface = this.sumoAgents.get(ra);
-            Agent a = agentInterface.getAgent();
-            a.addExternalTrigger(new LeftWorldExternalTrigger());
+            if (agentInterface != null) {
+                Agent a = agentInterface.getAgent();
+                a.addExternalTrigger(new LeftWorldExternalTrigger());
+            }
         });
     }
 
@@ -164,8 +165,10 @@ public class EnvironmentAgentInterface {
     void notifyAgentsEntered(List<String> enteredAgents) {
         enteredAgents.forEach(ea -> {
             SumoAPLAgent agentInterface = this.sumoAgents.get(ea);
-            Agent a = agentInterface.getAgent();
-            a.addExternalTrigger(new EnteredWorldExternalTrigger());
+            if (agentInterface != null) {
+                Agent a = agentInterface.getAgent();
+                a.addExternalTrigger(new EnteredWorldExternalTrigger());
+            }
         });
     }
 }
