@@ -70,7 +70,7 @@ public class EnvironmentAgentInterface {
         this.platform = Platform.newPlatform(executor, new FIPAMessenger());
         this.environmentInterface = new SumoEnvironmentInterface(parsedArguments);
         this.environmentInterface.addEnvironmentListener(this);
-        createInitialAgents();
+        createInitialAgents(parsedArguments.getOptionValue("car-id-prefix"));
 
         DefaultSimulationEngine engine = new DefaultSimulationEngine(platform, nIterations, this.environmentInterface);
         engine.start();
@@ -108,10 +108,10 @@ public class EnvironmentAgentInterface {
     /**
      * Construct the initial set of agents, based on the number of agents specified in the command line arguments
      */
-    private void createInitialAgents() {
+    private void createInitialAgents(String carIdPrefix) {
         System.out.println("Creating " + this.desiredNOfCars + " cars");
         for (int i = 0; i < this.desiredNOfCars; i++) {
-            SumoAPLAgent agent = InstantiateAgent(i);
+            SumoAPLAgent agent = InstantiateAgent(carIdPrefix, i);
             if (agent != null) {
                 this.sumoAgents.put(agent.getSumoID(), agent);
             }
@@ -124,8 +124,8 @@ public class EnvironmentAgentInterface {
      * @param agentIndex Index of the agent (used for incremental ID generation)
      * @return SumoAPLAgent object
      */
-    private SumoAPLAgent InstantiateAgent(int agentIndex) {
-        String agentID = String.format("%s-%d", SumoCar2APLAgent.TYPE_ID, agentIndex);
+    private SumoAPLAgent InstantiateAgent(String carIdPrefix, int agentIndex) {
+        String agentID = String.format("%s-%s-%d", SumoCar2APLAgent.TYPE_ID, carIdPrefix, agentIndex);
         SumoCar2APLAgent agentInterface = new SumoCar2APLAgent(agentID);
 
         AgentArguments args = new AgentArguments();

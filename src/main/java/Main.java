@@ -60,6 +60,15 @@ public class Main {
                 .type(Integer.TYPE)
                 .desc("The number of cars to place in the environment")
                 .build();
+        
+        final Option carIDPrefix = Option.builder("p")
+                .argName("Car ID prefix")
+                .hasArg()
+                .required()
+                .longOpt("car-id-prefix")
+                .desc("Prefix of the car agent ID strings")
+                .build();
+ 
 
         final Option stepLength = Option.builder()
                 .argName("Step length in seconds")
@@ -129,6 +138,7 @@ public class Main {
         options.addOption(seed);
         options.addOption(statistics);
         options.addOption(useMatrix);
+        options.addOption(carIDPrefix);
 
         return options;
     }
