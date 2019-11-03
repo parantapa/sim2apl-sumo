@@ -107,6 +107,15 @@ public class Main {
                 .desc("If specified, Sim2APL will track various statistics about the agents, and write these statistics" +
                         "to a .csv file when the simulation has finished successfully")
                 .build();
+        
+        final Option useMatrix = Option.builder()
+                .argName("Use Matrix")
+                .hasArg()
+                .required()
+                .longOpt("use-matrix")
+                .type(Boolean.TYPE)
+                .desc("If true use matrix")
+                .build();
 
         final Options options = new Options();
 
@@ -119,6 +128,7 @@ public class Main {
         options.addOption(collisionAction);
         options.addOption(seed);
         options.addOption(statistics);
+        options.addOption(useMatrix);
 
         return options;
     }

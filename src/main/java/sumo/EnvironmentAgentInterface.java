@@ -21,6 +21,9 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import nl.uu.cs.iss.ga.sim2apl.core.tick.DefaultBlockingTickExecutor;
+import nl.uu.cs.iss.ga.sim2apl.core.tick.MatrixTickExecutor;
+import nl.uu.cs.iss.ga.sim2apl.core.tick.TickExecutor;
 
 /**
  * The EnvironmentAgentInterface is the coupling between the Sim2APL platform and the SUMO environment.
@@ -56,8 +59,15 @@ public class EnvironmentAgentInterface {
         int nIterations = -1;
         if (parsedArguments.hasOption("number-of-iterations"))
             nIterations = Integer.parseInt(parsedArguments.getOptionValue("number-of-iterations"));
+        
+        TickExecutor executor;
+        if (Boolean.parseBoolean(parsedArguments.getOptionValue("use-matrix"))) {
+            executor = new MatrixTickExecutor(4);
+        } else {
+            executor = new DefaultBlockingTickExecutor(4);
+        }
 
-        this.platform = Platform.newPlatform(4, new FIPAMessenger());
+        this.platform = Platform.newPlatform(executor, new FIPAMessenger());
         this.environmentInterface = new SumoEnvironmentInterface(parsedArguments);
         this.environmentInterface.addEnvironmentListener(this);
         createInitialAgents();
