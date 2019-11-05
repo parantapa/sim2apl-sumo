@@ -99,13 +99,13 @@ public class Main {
                 .build();
 
         final Option statistics = Option.builder()
-                .argName("Statistics destination file")
+                .argName("include statistics")
                 .hasArg()
-                .longOpt("statistics-file")
+                .longOpt("statistics")
                 .required(false)
-                .type(String.class)
-                .desc("If specified, Sim2APL will track various statistics about the agents, and write these statistics" +
-                        "to a .csv file when the simulation has finished successfully")
+                .type(STATISTICS_OPTIONS.class)
+                .desc("Statistics level to use. Statistics will be placed in separate directory per run in" +
+                        "the output directory")
                 .build();
 
         final Options options = new Options();
@@ -121,5 +121,11 @@ public class Main {
         options.addOption(statistics);
 
         return options;
+    }
+
+    enum STATISTICS_OPTIONS {
+        NONE,
+        AVERAGE,
+        INDIVIDUAL
     }
 }

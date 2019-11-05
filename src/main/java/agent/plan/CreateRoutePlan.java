@@ -9,6 +9,8 @@ import nl.uu.cs.iss.ga.sim2apl.core.plan.Plan;
 import nl.uu.cs.iss.ga.sim2apl.core.plan.PlanExecutionError;
 import sumo.EnvironmentAgentInterface;
 
+import java.util.List;
+
 /**
  * A plan to create a new random route in the SUMO environment. This plan should be executed always before
  * trying to enter the simulation environment.
@@ -27,37 +29,45 @@ public class CreateRoutePlan extends Plan {
         CarContext context = planToAgentInterface.getContext(CarContext.class);
         EnvironmentAgentInterface eaInterface = context.getEnvironmentAgentInterface();
 
-        String routeID = eaInterface.getNewRouteID();
-        SumoStage plannedRoute = null;
+//        String routeID = eaInterface.getNewRouteID();
+//        SumoStage plannedRoute = null;
+//
+//        String startEdgeId, targetEdgeId;
+//
+//        if(context.getRouteID() != null) {
+//            // Try to create a route which is the reverse of the previous route that was succesful
+//            startEdgeId = context.getCurrentTarget();
+//            targetEdgeId = context.getCurrentRoute().get(0);
+//            plannedRoute = createRoute(eaInterface, startEdgeId, targetEdgeId);
+//            planToAgentInterface.adoptPlan(new EnterWorldPlan());
+//        } else {
+//            startEdgeId = null; targetEdgeId = null;
+//        }
+//
+//        while (plannedRoute == null) {
+//            startEdgeId = eaInterface.getEnvironmentInterface().getRandomEdge();
+//            targetEdgeId = eaInterface.getEnvironmentInterface().getRandomEdge();
+//            plannedRoute = createRoute(eaInterface, startEdgeId, targetEdgeId);
+//        }
+//
+//        context.updateRoute(startEdgeId, plannedRoute.edges, routeID);
+//
+//        SumoCommand addRoute = Route.add(routeID, plannedRoute.edges);
+//
+//        setFinished(true);
+//        System.out.format("Agent %s created route with ID %s and %f edges\n",
+//                planToAgentInterface.getAgentID().toString(),
+//                routeID,
+//                plannedRoute.length);
+//
+//        return addRoute;
 
-        String startEdgeId, targetEdgeId;
 
-        if(context.getRouteID() != null) {
-            // Try to create a route which is the reverse of the previous route that was succesful
-            startEdgeId = context.getCurrentTarget();
-            targetEdgeId = context.getCurrentRoute().get(0);
-            plannedRoute = createRoute(eaInterface, startEdgeId, targetEdgeId);
-            planToAgentInterface.adoptPlan(new EnterWorldPlan());
-        } else {
-            startEdgeId = null; targetEdgeId = null;
-        }
+        String routeID = eaInterface.getEnvironmentInterface().getRandomRoute();
+        List<String> routeEdges = (List<String>) eaInterface.getEnvironmentInterface().do_job_get(Route.getEdges(routeID));
+        context.updateRoute(routeEdges.get(0), routeEdges, routeID);
+        return  null;
 
-        while (plannedRoute == null) {
-            startEdgeId = eaInterface.getEnvironmentInterface().getRandomEdge();
-            targetEdgeId = eaInterface.getEnvironmentInterface().getRandomEdge();
-            plannedRoute = createRoute(eaInterface, startEdgeId, targetEdgeId);
-        }
-
-        context.updateRoute(startEdgeId, plannedRoute.edges, routeID);
-
-        SumoCommand addRoute = Route.add(routeID, plannedRoute.edges);
-
-        setFinished(true);
-        System.out.format("Agent %s created route with ID %s and %f edges\n",
-                planToAgentInterface.getAgentID().toString(),
-                routeID,
-                plannedRoute.length);
-        return addRoute;
     }
 
     public SumoStage createRoute(EnvironmentAgentInterface eaInterface, String randomStartEdge, String randomDestinationEdge) {

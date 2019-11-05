@@ -2,6 +2,7 @@ package sumo;
 
 import com.sun.istack.Nullable;
 import de.tudresden.sumo.cmd.Edge;
+import de.tudresden.sumo.cmd.Route;
 import de.tudresden.sumo.cmd.Simulation;
 import de.tudresden.sumo.cmd.Vehicle;
 import de.tudresden.sumo.config.Constants;
@@ -53,6 +54,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
      * The edges making up the road network
      **/
     private List<String> networkEdges;
+    private List<String> routes;
 
     /**
      * Various parameters from the SUMO environment
@@ -92,7 +94,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
             this.stepLength = args.getOptionValue("step-length");
         if (args.hasOption("collision.action"))
             this.collisionAction = args.getOptionValue("collision.action");
-        if (args.hasOption("statistics-file"))
+        if (args.hasOption("statistics"))
             this.statisticsFile = new File(args.getOptionValue("statistics-file"));
 
         startConnection();
@@ -101,6 +103,29 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
             this.statistics = new Statistics(Integer.parseInt(args.getOptionValue("number-of-cars")));
     }
 
+    private void generateStatisticsDirectory(CommandLine args) {
+        long time = System.currentTimeMillis();
+
+        int iterations = Integer.parseInt(args.getOptionValue("number-of-iterations"));
+        String iterationFileInfo = iterations > 0 ? String.format("_%d-iterations", iterations) : "";
+
+        String identifier = this.configFile.toLowerCase();
+        if(identifier.endsWith("sumo.cfg"))
+            identifier = identifier.substring(0, identifier.length() - "sumo.cfg".length());
+        if(identifier.endsWith("sumocfg"))
+            identifier = identifier.substring(0, identifier.length() - "sumocfg".length());
+        else if (identifier.contains("sumo"))
+            identifier = identifier.substring(0, identifier.indexOf("sumo"));
+
+        String dirName = String.format("%d_%s_%d-Cars%s",
+                time,
+                identifier,
+                Integer.parseInt(args.getOptionValue("number-of-cars")),
+                iterationFileInfo
+        );
+
+        // TODO create dir
+    }
 
     @Override
     public void tickPreHook(long l) {
@@ -192,6 +217,8 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
     public String getRandomEdge() {
         return this.networkEdges.get(this.rnd.nextInt(this.networkEdges.size()));
     }
+
+    public String getRandomRoute() { return this.routes.get(this.rnd.nextInt(this.routes.size())); }
 
     /**
      * Get a random lane on the given edge. 0 if the action could not succeed
@@ -288,6 +315,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         try {
             this.connection.runServer();
             this.networkEdges = (List<String>) this.connection.do_job_get(Edge.getIDList());
+            this.routes = (List<String>) this.connection.do_job_get(Route.getIDList());
             return true;
         } catch (Exception e) {
             System.err.println("Error trying to start a connection with SUMO:");

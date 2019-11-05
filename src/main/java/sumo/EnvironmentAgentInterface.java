@@ -13,7 +13,6 @@ import nl.uu.cs.iss.ga.sim2apl.core.agent.Agent;
 import nl.uu.cs.iss.ga.sim2apl.core.agent.AgentArguments;
 import nl.uu.cs.iss.ga.sim2apl.core.agent.AgentID;
 import nl.uu.cs.iss.ga.sim2apl.core.fipa.FIPAMessenger;
-import nl.uu.cs.iss.ga.sim2apl.core.messaging.Messenger;
 import nl.uu.cs.iss.ga.sim2apl.core.platform.Platform;
 import nl.uu.cs.iss.ga.sim2apl.core.tick.DefaultSimulationEngine;
 import org.apache.commons.cli.CommandLine;
