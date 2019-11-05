@@ -1,5 +1,7 @@
 package sumo;
 
+import agent.plan.PlanMessage;
+import agent.plan.PlanMessageParser;
 import com.sun.istack.Nullable;
 import de.tudresden.sumo.cmd.Edge;
 import de.tudresden.sumo.cmd.Route;
@@ -94,8 +96,8 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
             this.stepLength = args.getOptionValue("step-length");
         if (args.hasOption("collision.action"))
             this.collisionAction = args.getOptionValue("collision.action");
-        if (args.hasOption("statistics"))
-            this.statisticsFile = new File(args.getOptionValue("statistics-file"));
+//        if (args.hasOption("statistics"))
+//            this.statisticsFile = new File(args.getOptionValue("statistics-file"));
 
         startConnection();
 
@@ -137,13 +139,15 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
     }
 
     @Override
-    public void tickPostHook(long l, int i, HashMap<AgentID, List<Object>> hashMap) {
+    public void tickPostHook(long l, int i, HashMap<AgentID, List<String>> hashMap) {
         System.out.format("Tick %d took %d milliseconds. %d agents produced actions\n", l, i, hashMap.size());
-
+        
         for (AgentID aid : hashMap.keySet()) {
-            for (Object o : hashMap.get(aid)) {
+            for (String o : hashMap.get(aid)) {
+                PlanMessage message = PlanMessageParser.parse(o);
+                
                 try {
-                    this.connection.do_job_set((SumoCommand) o);
+                    this.connection.do_job_set(message.getSumoCommand());
                 } catch (IllegalStateException e) {
                     System.err.println("Could not peform job " + o.toString());
                     System.err.println(e.getLocalizedMessage());

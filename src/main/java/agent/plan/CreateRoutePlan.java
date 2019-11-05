@@ -2,7 +2,6 @@ package agent.plan;
 
 import agent.context.CarContext;
 import de.tudresden.sumo.cmd.Route;
-import de.tudresden.sumo.util.SumoCommand;
 import de.tudresden.ws.container.SumoStage;
 import nl.uu.cs.iss.ga.sim2apl.core.agent.PlanToAgentInterface;
 import nl.uu.cs.iss.ga.sim2apl.core.plan.Plan;
@@ -25,10 +24,10 @@ public class CreateRoutePlan extends Plan {
     public CreateRoutePlan() { }
 
     @Override
-    public Object execute(PlanToAgentInterface planToAgentInterface) throws PlanExecutionError {
+    public String execute(PlanToAgentInterface planToAgentInterface) throws PlanExecutionError {
         CarContext context = planToAgentInterface.getContext(CarContext.class);
         EnvironmentAgentInterface eaInterface = context.getEnvironmentAgentInterface();
-
+//
 //        String routeID = eaInterface.getNewRouteID();
 //        SumoStage plannedRoute = null;
 //
@@ -52,7 +51,7 @@ public class CreateRoutePlan extends Plan {
 //
 //        context.updateRoute(startEdgeId, plannedRoute.edges, routeID);
 //
-//        SumoCommand addRoute = Route.add(routeID, plannedRoute.edges);
+//        CreateRoutePlanMessage message = new CreateRoutePlanMessage(routeID, plannedRoute);
 //
 //        setFinished(true);
 //        System.out.format("Agent %s created route with ID %s and %f edges\n",
@@ -60,19 +59,15 @@ public class CreateRoutePlan extends Plan {
 //                routeID,
 //                plannedRoute.length);
 //
-//        return addRoute;
-
+//        return message.toJson();
 
         String routeID = eaInterface.getEnvironmentInterface().getRandomRoute();
         List<String> routeEdges = (List<String>) eaInterface.getEnvironmentInterface().do_job_get(Route.getEdges(routeID));
         context.updateRoute(routeEdges.get(0), routeEdges, routeID);
         return  null;
-
     }
 
     public SumoStage createRoute(EnvironmentAgentInterface eaInterface, String randomStartEdge, String randomDestinationEdge) {
         return eaInterface.getEnvironmentInterface().findRoute(randomStartEdge, randomDestinationEdge, "car");
     }
-
-
 }

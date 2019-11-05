@@ -60,6 +60,15 @@ public class Main {
                 .type(Integer.TYPE)
                 .desc("The number of cars to place in the environment")
                 .build();
+        
+        final Option carIDPrefix = Option.builder("p")
+                .argName("Car ID prefix")
+                .hasArg()
+                .required()
+                .longOpt("car-id-prefix")
+                .desc("Prefix of the car agent ID strings")
+                .build();
+ 
 
         final Option stepLength = Option.builder()
                 .argName("Step length in seconds")
@@ -107,6 +116,15 @@ public class Main {
                 .desc("Statistics level to use. Statistics will be placed in separate directory per run in" +
                         "the output directory")
                 .build();
+        
+        final Option useMatrix = Option.builder()
+                .argName("Use Matrix")
+                .hasArg()
+                .required(false)
+                .longOpt("use-matrix")
+                .type(Boolean.TYPE)
+                .desc("If true use matrix")
+                .build();
 
         final Options options = new Options();
 
@@ -119,6 +137,8 @@ public class Main {
         options.addOption(collisionAction);
         options.addOption(seed);
         options.addOption(statistics);
+        options.addOption(useMatrix);
+        options.addOption(carIDPrefix);
 
         return options;
     }

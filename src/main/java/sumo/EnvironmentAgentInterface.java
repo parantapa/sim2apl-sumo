@@ -21,6 +21,9 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import nl.uu.cs.iss.ga.sim2apl.core.tick.DefaultBlockingTickExecutor;
+import nl.uu.cs.iss.ga.sim2apl.core.tick.MatrixTickExecutor;
+import nl.uu.cs.iss.ga.sim2apl.core.tick.TickExecutor;
 
 /**
  * The EnvironmentAgentInterface is the coupling between the Sim2APL platform and the SUMO environment.
@@ -56,11 +59,18 @@ public class EnvironmentAgentInterface {
         int nIterations = -1;
         if (parsedArguments.hasOption("number-of-iterations"))
             nIterations = Integer.parseInt(parsedArguments.getOptionValue("number-of-iterations"));
+        
+        TickExecutor executor;
+        if (parsedArguments.hasOption("use-matrix") && Boolean.parseBoolean(parsedArguments.getOptionValue("use-matrix"))) {
+            executor = new MatrixTickExecutor(4);
+        } else {
+            executor = new DefaultBlockingTickExecutor(4);
+        }
 
-        this.platform = Platform.newPlatform(4, new FIPAMessenger());
+        this.platform = Platform.newPlatform(executor, new FIPAMessenger());
         this.environmentInterface = new SumoEnvironmentInterface(parsedArguments);
         this.environmentInterface.addEnvironmentListener(this);
-        createInitialAgents();
+        createInitialAgents(parsedArguments.getOptionValue("car-id-prefix"));
 
         DefaultSimulationEngine engine = new DefaultSimulationEngine(platform, nIterations, this.environmentInterface);
         engine.start();
@@ -98,10 +108,10 @@ public class EnvironmentAgentInterface {
     /**
      * Construct the initial set of agents, based on the number of agents specified in the command line arguments
      */
-    private void createInitialAgents() {
+    private void createInitialAgents(String carIdPrefix) {
         System.out.println("Creating " + this.desiredNOfCars + " cars");
         for (int i = 0; i < this.desiredNOfCars; i++) {
-            SumoAPLAgent agent = InstantiateAgent(i);
+            SumoAPLAgent agent = InstantiateAgent(carIdPrefix, i);
             if (agent != null) {
                 this.sumoAgents.put(agent.getSumoID(), agent);
             }
@@ -114,8 +124,8 @@ public class EnvironmentAgentInterface {
      * @param agentIndex Index of the agent (used for incremental ID generation)
      * @return SumoAPLAgent object
      */
-    private SumoAPLAgent InstantiateAgent(int agentIndex) {
-        String agentID = String.format("%s-%d", SumoCar2APLAgent.TYPE_ID, agentIndex);
+    private SumoAPLAgent InstantiateAgent(String carIdPrefix, int agentIndex) {
+        String agentID = String.format("%s-%s-%d", SumoCar2APLAgent.TYPE_ID, carIdPrefix, agentIndex);
         SumoCar2APLAgent agentInterface = new SumoCar2APLAgent(agentID);
 
         AgentArguments args = new AgentArguments();
@@ -149,8 +159,10 @@ public class EnvironmentAgentInterface {
     void notifyAgentsArrived(List<String> arrivedAgents) {
         arrivedAgents.forEach(ra -> {
             SumoAPLAgent agentInterface = this.sumoAgents.get(ra);
-            Agent a = agentInterface.getAgent();
-            a.addExternalTrigger(new LeftWorldExternalTrigger());
+            if (agentInterface != null) {
+                Agent a = agentInterface.getAgent();
+                a.addExternalTrigger(new LeftWorldExternalTrigger());
+            }
         });
     }
 
@@ -163,8 +175,10 @@ public class EnvironmentAgentInterface {
     void notifyAgentsEntered(List<String> enteredAgents) {
         enteredAgents.forEach(ea -> {
             SumoAPLAgent agentInterface = this.sumoAgents.get(ea);
-            Agent a = agentInterface.getAgent();
-            a.addExternalTrigger(new EnteredWorldExternalTrigger());
+            if (agentInterface != null) {
+                Agent a = agentInterface.getAgent();
+                a.addExternalTrigger(new EnteredWorldExternalTrigger());
+            }
         });
     }
 }

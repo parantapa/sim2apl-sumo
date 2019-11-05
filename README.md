@@ -49,6 +49,7 @@ usage: Sim2APL SUMO -s <SUMO binar> -c <Configuration File Location> [-i <number
  -i,--number-of-iterations <number of iterations>        The number of iterations / ticks the simulation should perform. If not specified, simulation will run until interrupted manually
  
  -n,--net-file <Network file location>                   Load road network description from FILE
+ -p --car-id-prefix                                      Prefix of the car agent ID strings (Agents on different compute nodes should have diffrent prefix)
     
     --number-of-cars <number of cars>                    The number of cars to place in the environment
    
@@ -59,4 +60,5 @@ usage: Sim2APL SUMO -s <SUMO binar> -c <Configuration File Location> [-i <number
     --statistics-file <Statistics destination file>      If specified, Sim2APL will track various statistics about the agents, and write these statisticsto a .csv file when the simulation has finished successfully
    
     --step-length <Step length in seconds>               Defines the step duration in seconds
+    --use-matrix <Use Matrix>                            If true use Matrix
 ```

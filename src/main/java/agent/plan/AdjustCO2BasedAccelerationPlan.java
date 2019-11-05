@@ -13,7 +13,7 @@ import sumo.EnvironmentAgentInterface;
  */
 public class AdjustCO2BasedAccelerationPlan extends Plan {
     @Override
-    public Object execute(PlanToAgentInterface planToAgentInterface) throws PlanExecutionError {
+    public String execute(PlanToAgentInterface planToAgentInterface) throws PlanExecutionError {
         CarContext context = planToAgentInterface.getContext(CarContext.class);
         EnvironmentAgentInterface eaInterface = context.getEnvironmentAgentInterface();
 
@@ -39,9 +39,12 @@ public class AdjustCO2BasedAccelerationPlan extends Plan {
         setFinished(true);
 
         double newAcc = currentMaximumAcceleration + (accelerationCorrectionFactor * currentMaximumAcceleration * 0.1);
-
-        return Vehicle.setAccel(
+        
+        AdjustCO2BasedAccelerationPlanMessage message = new AdjustCO2BasedAccelerationPlanMessage(
                 context.getAgentInterface().getSumoID(),
-                newAcc < .1 ? currentMaximumAcceleration : newAcc);
+                (newAcc < .1 ? currentMaximumAcceleration : newAcc)
+        );
+        
+        return message.toJson();
     }
 }
