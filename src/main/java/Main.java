@@ -100,12 +100,11 @@ public class Main {
 
         final Option statistics = Option.builder()
                 .argName("include statistics")
-                .hasArg()
+                .hasArg(false)
                 .longOpt("statistics")
                 .required(false)
-                .type(STATISTICS_OPTIONS.class)
-                .desc("Statistics level to use. Statistics will be placed in separate directory per run in" +
-                        "the output directory")
+                .type(boolean.class)
+                .desc("Start sumo with logging enabled")
                 .build();
 
         final Options options = new Options();
@@ -121,11 +120,5 @@ public class Main {
         options.addOption(statistics);
 
         return options;
-    }
-
-    enum STATISTICS_OPTIONS {
-        NONE,
-        AVERAGE,
-        INDIVIDUAL
     }
 }
