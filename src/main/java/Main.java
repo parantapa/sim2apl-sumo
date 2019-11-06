@@ -94,7 +94,18 @@ public class Main {
                 .longOpt("random-seed")
                 .required(false)
                 .type(Long.TYPE)
-                .desc("The seed to use for Random, so reproducibility can be ensured")
+                .desc("The seed uses by the system to order processes. This seed should be set when reproducibility" +
+                        "across multiple compute nodes is required")
+                .build();
+
+        final Option agentSeed = Option.builder()
+                .argName("Agent seed")
+                .hasArg()
+                .longOpt("agent-seed")
+                .required(false)
+                .type(Long.TYPE)
+                .desc("The seed used by agents for random operations. This seed should be set to ensure reproducibility." +
+                        "If reproducibility is not required, this seed is not necessary")
                 .build();
 
         final Option nIterations = Option.builder("i")
@@ -109,12 +120,11 @@ public class Main {
 
         final Option statistics = Option.builder()
                 .argName("include statistics")
-                .hasArg()
+                .hasArg(false)
                 .longOpt("statistics")
                 .required(false)
-                .type(STATISTICS_OPTIONS.class)
-                .desc("Statistics level to use. Statistics will be placed in separate directory per run in" +
-                        "the output directory")
+                .type(boolean.class)
+                .desc("Start sumo with logging enabled")
                 .build();
         
         final Option useMatrix = Option.builder()
@@ -136,16 +146,11 @@ public class Main {
         options.addOption(stepLength);
         options.addOption(collisionAction);
         options.addOption(seed);
+        options.addOption(agentSeed);
         options.addOption(statistics);
         options.addOption(useMatrix);
         options.addOption(carIDPrefix);
 
         return options;
-    }
-
-    enum STATISTICS_OPTIONS {
-        NONE,
-        AVERAGE,
-        INDIVIDUAL
     }
 }

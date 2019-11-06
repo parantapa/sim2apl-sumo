@@ -9,7 +9,6 @@ import de.tudresden.sumo.cmd.Simulation;
 import de.tudresden.sumo.cmd.Vehicle;
 import de.tudresden.sumo.config.Constants;
 import de.tudresden.sumo.util.SumoCommand;
-import de.tudresden.ws.container.SumoPosition3D;
 import de.tudresden.ws.container.SumoStage;
 import it.polito.appeal.traci.SumoTraciConnection;
 import it.polito.appeal.traci.TraCIException;
@@ -20,6 +19,8 @@ import org.apache.commons.cli.CommandLine;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -30,6 +31,8 @@ import java.util.*;
  * This class also handles logging and collection of statistics from the SUMO environment
  */
 public class SumoEnvironmentInterface implements TickHookProcessor {
+
+    private static final String LOG_DIR = "output";
 
     private SumoTraciConnection connection;
 
@@ -43,9 +46,15 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
     private String stepLength = "1";
 
     /**
-     * A Java Random object, to make random choices deterministic (if seed provided)
+     * A Java Random object, to make random choices deterministic (if seed provided). Used by the system to shuffle
+     * order of agent execution and agent action application. Used for reproducibility across compute nodes
      **/
     private final Random rnd;
+
+    /**
+     * A Java Random object, used by agents for action selection
+     */
+    private final Random agentRnd;
 
     /**
      * A set to keep track of agents active and present in the SUMO environment
@@ -72,8 +81,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
     /**
      * For gathering statistics
      **/
-    private Statistics statistics;
-    private File statisticsFile = null;
+    private String statisticsFile = null;
 
     /**
      * Default constructor
@@ -91,42 +99,22 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         if (seed != null) {
             this.rnd.setSeed(Long.parseLong(seed));
         }
+        String agentSeed = args.getOptionValue("agent-seed");
+        if(agentSeed != null) {
+            this.agentRnd = new Random();
+            this.agentRnd.setSeed(Long.parseLong(agentSeed));
+        } else {
+            this.agentRnd = rnd;
+        }
 
         if (args.hasOption("step-length"))
             this.stepLength = args.getOptionValue("step-length");
         if (args.hasOption("collision.action"))
             this.collisionAction = args.getOptionValue("collision.action");
-//        if (args.hasOption("statistics"))
-//            this.statisticsFile = new File(args.getOptionValue("statistics-file"));
+        if (args.hasOption("statistics"))
+            this.statisticsFile = generateStatisticsDirectory(args);
 
         startConnection();
-
-        if (this.statisticsFile != null)
-            this.statistics = new Statistics(Integer.parseInt(args.getOptionValue("number-of-cars")));
-    }
-
-    private void generateStatisticsDirectory(CommandLine args) {
-        long time = System.currentTimeMillis();
-
-        int iterations = Integer.parseInt(args.getOptionValue("number-of-iterations"));
-        String iterationFileInfo = iterations > 0 ? String.format("_%d-iterations", iterations) : "";
-
-        String identifier = this.configFile.toLowerCase();
-        if(identifier.endsWith("sumo.cfg"))
-            identifier = identifier.substring(0, identifier.length() - "sumo.cfg".length());
-        if(identifier.endsWith("sumocfg"))
-            identifier = identifier.substring(0, identifier.length() - "sumocfg".length());
-        else if (identifier.contains("sumo"))
-            identifier = identifier.substring(0, identifier.indexOf("sumo"));
-
-        String dirName = String.format("%d_%s_%d-Cars%s",
-                time,
-                identifier,
-                Integer.parseInt(args.getOptionValue("number-of-cars")),
-                iterationFileInfo
-        );
-
-        // TODO create dir
     }
 
     @Override
@@ -141,11 +129,9 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
     @Override
     public void tickPostHook(long l, int i, HashMap<AgentID, List<String>> hashMap) {
         System.out.format("Tick %d took %d milliseconds. %d agents produced actions\n", l, i, hashMap.size());
-        
         for (AgentID aid : hashMap.keySet()) {
             for (String o : hashMap.get(aid)) {
                 PlanMessage message = PlanMessageParser.parse(o);
-                
                 try {
                     this.connection.do_job_set(message.getSumoCommand());
                 } catch (IllegalStateException e) {
@@ -167,16 +153,11 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
             System.err.println(e.getLocalizedMessage());
             System.exit(4);
         }
-
-        if (this.statisticsFile != null) updateStats(l);
     }
 
     @Override
     public void simulationFinishedHook(long l, int i) {
         closeConnection();
-        if (this.statisticsFile != null) {
-            this.statistics.createCsv(this.statisticsFile);
-        }
     }
 
     /**
@@ -219,10 +200,10 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
      * @return Random edge ID
      */
     public String getRandomEdge() {
-        return this.networkEdges.get(this.rnd.nextInt(this.networkEdges.size()));
+        return this.networkEdges.get(this.agentRnd.nextInt(this.networkEdges.size()));
     }
 
-    public String getRandomRoute() { return this.routes.get(this.rnd.nextInt(this.routes.size())); }
+    public String getRandomRoute() { return this.routes.get(this.agentRnd.nextInt(this.routes.size())); }
 
     /**
      * Get a random lane on the given edge. 0 if the action could not succeed
@@ -232,7 +213,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
      */
     public byte getLaneForEdge(String edgeID) {
         try {
-            return (byte) this.rnd.nextInt((int) this.connection.do_job_get(Edge.getLaneNumber(edgeID)));
+            return (byte) this.agentRnd.nextInt((int) this.connection.do_job_get(Edge.getLaneNumber(edgeID)));
         } catch (Exception e) {
             System.err.println("Could not get lane for edge " + edgeID);
             System.err.println(e.getLocalizedMessage());
@@ -298,7 +279,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
      * @return Java Random object. If a seed was provided in the startup arguments, that seed is used in this object.
      */
     public Random getRandom() {
-        return this.rnd;
+        return this.agentRnd;
     }
 
     /**
@@ -315,6 +296,9 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
 
         if (this.netFile != null)
             this.connection.addOption("net-file", this.netFile);
+
+        if (this.statisticsFile != null)
+            this.connection.addOption("fcd-output", this.statisticsFile);
 
         try {
             this.connection.runServer();
@@ -337,6 +321,35 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         if (this.connection != null && !this.connection.isClosed()) {
             this.connection.close();
         }
+    }
+
+    /**
+     * Generate a log file name for passing to SUMO
+     * @param args  Parsed command line arguments
+     * @return  Log file name in OUTPUT directory
+     */
+    private String generateStatisticsDirectory(CommandLine args) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH'h'mm'm'ss.SSS", Locale.ENGLISH);
+        String time = formatter.format(LocalDateTime.now());
+
+        int iterations = Integer.parseInt(args.getOptionValue("number-of-iterations"));
+        String iterationFileInfo = iterations > 0 ? String.format("_%d-iterations", iterations) : "";
+
+        String identifier = new File(this.configFile).getName().toLowerCase();
+        if(identifier.endsWith("sumo.cfg"))
+            identifier = identifier.substring(0, identifier.length() - "sumo.cfg".length() - 1);
+        if(identifier.endsWith("sumocfg"))
+            identifier = identifier.substring(0, identifier.length() - "sumocfg".length() - 1);
+        else if (identifier.contains("sumo"))
+            identifier = identifier.substring(0, identifier.indexOf("sumo"));
+
+        return String.format("%s/%s_%s_%d-Cars%s.log",
+                SumoEnvironmentInterface.LOG_DIR,
+                time,
+                identifier,
+                Integer.parseInt(args.getOptionValue("number-of-cars")),
+                iterationFileInfo
+        );
     }
 
     /**
@@ -440,33 +453,6 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         } catch (Exception e) {
             System.err.println("Error trying to find average values:");
             System.err.println(e.getLocalizedMessage());
-        }
-    }
-
-    /**
-     * Requests various statistics from the SUMO environment for all active agents and stores these for later refference.
-     * This method should be called in the pre- or post-hook of every tick
-     *
-     * @param tick The tick index of the just finished tick
-     */
-    private void updateStats(long tick) {
-        try {
-            List<String> agentList = (List<String>) this.connection.do_job_get(Vehicle.getIDList());
-            for (String agent : agentList) {
-                double speed = getDouble(Vehicle.getSpeed(agent));
-                double acc = getDouble(Vehicle.getAccel(agent));
-                double co2 = getDouble(Vehicle.getCO2Emission(agent));
-                SumoPosition3D position3D = (SumoPosition3D) this.connection.do_job_get(Vehicle.getPosition3D(agent));
-                this.statistics.addStatisticsForCar(
-                        tick,
-                        Integer.parseInt(agent.replaceAll("\\D+", "")),
-                        speed,
-                        acc,
-                        co2,
-                        position3D);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 

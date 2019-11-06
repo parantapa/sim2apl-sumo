@@ -22,7 +22,7 @@
     <dependencies>
         <dependency>
             <groupId>nl.uu.iss.ga</groupId>
-            <artifactId>sim2apl</artifactId>
+            <artifactId>sim2apl-matrix</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
