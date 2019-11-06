@@ -1,5 +1,6 @@
 import org.apache.commons.cli.*;
 import sumo.EnvironmentAgentInterface;
+import sumo.SimConfig;
 
 public class Main {
 
@@ -18,9 +19,10 @@ public class Main {
         try {
             parsedArguments = parser.parse(options, args);
         } catch (ParseException e) {
-            e.printStackTrace();
+            System.out.println(e.getLocalizedMessage());
             HelpFormatter helpFormatter = new HelpFormatter();
-            helpFormatter.printHelp("Sim2APL SUMO", options);
+            helpFormatter.setWidth(120);
+            helpFormatter.printHelp("Sim2APL SUMO", options, true);
             System.exit(2);
         }
 
@@ -28,6 +30,11 @@ public class Main {
     }
 
     private static Options createOptions() {
+
+        /**
+         * SUMO
+         */
+
         final Option sumoBinary = Option.builder("s")
                 .argName("SUMO binary")
                 .hasArg()
@@ -52,15 +59,6 @@ public class Main {
                 .desc("Load road network description from FILE")
                 .build();
 
-        final Option nCars = Option.builder()
-                .argName("number of cars")
-                .hasArg()
-                .longOpt("number-of-cars")
-                .required()
-                .type(Integer.TYPE)
-                .desc("The number of cars to place in the environment")
-                .build();
-
         final Option stepLength = Option.builder()
                 .argName("Step length in seconds")
                 .hasArg()
@@ -78,6 +76,77 @@ public class Main {
                 .type(String.class)
                 .desc("How to deal with collisions: [none,warn,teleport,remove]")
                 .build();
+
+        /**
+         * Instantiation
+         */
+        final Option nCars = Option.builder()
+                .argName("number of cars")
+                .hasArg()
+                .longOpt("number-of-cars")
+                .required()
+                .type(Integer.TYPE)
+                .desc("The number of cars to place in the environment")
+                .build();
+
+        final Option nIterations = Option.builder("i")
+                .argName("number of iterations")
+                .hasArg()
+                .longOpt("number-of-iterations")
+                .required(false)
+                .type(Long.TYPE)
+                .desc("The number of iterations / ticks the simulation should perform. If not specified, simulation will " +
+                        "run until interrupted manually")
+                .build();
+
+        final Option richPct = Option.builder()
+                .argName("percentage of " + SimConfig.RICH_TYPE + "types")
+                .hasArg()
+                .longOpt(SimConfig.RICH_TYPE)
+                .required()
+                .type(Double.TYPE)
+                .desc("The percentage of cars with type" + SimConfig.RICH_TYPE)
+                .build();
+
+        final Option mediumPct = Option.builder()
+                .argName("percentage of " + SimConfig.MEDIUM_TYPE + "types")
+                .hasArg()
+                .longOpt(SimConfig.MEDIUM_TYPE)
+                .required()
+                .type(Double.TYPE)
+                .desc("The percentage of cars with type" + SimConfig.MEDIUM_TYPE)
+                .build();
+
+        final Option poorPct = Option.builder()
+                .argName("percentage of " + SimConfig.POOR_TYPE + "types")
+                .hasArg()
+                .longOpt(SimConfig.POOR_TYPE)
+                .required()
+                .type(Double.TYPE)
+                .desc("The percentage of cars with type" + SimConfig.POOR_TYPE)
+                .build();
+
+        final Option speedFact = Option.builder()
+                .argName("Speed reduction factor")
+                .hasArg()
+                .longOpt("speed-reduction")
+                .required()
+                .type(Double.TYPE)
+                .desc("The speed reduction factor from the original map speed")
+                .build();
+
+        final Option minGap = Option.builder()
+                .argName("Minimum Gap")
+                .hasArg()
+                .longOpt("min-gap")
+                .required()
+                .type(Double.TYPE)
+                .desc("The minimum gap between cars")
+                .build();
+
+        /**
+         * SIMULATION
+         * **/
 
         final Option seed = Option.builder()
                 .argName("Seed")
@@ -99,24 +168,28 @@ public class Main {
                         "If reproducibility is not required, this seed is not necessary")
                 .build();
 
-        final Option nIterations = Option.builder("i")
-                .argName("number of iterations")
-                .hasArg()
-                .longOpt("number-of-iterations")
-                .required(false)
-                .type(Long.TYPE)
-                .desc("The number of iterations / ticks the simulation should perform. If not specified, simulation will " +
-                        "run until interrupted manually")
-                .build();
-
         final Option statistics = Option.builder()
-                .argName("include statistics")
-                .hasArg(false)
-                .longOpt("statistics")
+                .argName("Include agent level statistics")
+                .hasArg(true)
+                .optionalArg(true)
+                .longOpt("agent-statistics")
                 .required(false)
                 .type(boolean.class)
-                .desc("Start sumo with logging enabled")
+                .desc("Use SUMO logging to log agent statistics at each time step. If no file is specified, a file " +
+                        "name will be generated")
                 .build();
+
+        final Option routeStatistics = Option.builder()
+                .argName("Include agent level statistics")
+                .hasArg(true)
+                .optionalArg(true)
+                .longOpt("route-statistics")
+                .required(false)
+                .type(boolean.class)
+                .desc("Use SUMO logging to log route statistics at each time step. If no file is specified, a file " +
+                    "name will be generated")
+                .build();
+
 
         final Options options = new Options();
 
@@ -127,9 +200,15 @@ public class Main {
         options.addOption(nIterations);
         options.addOption(stepLength);
         options.addOption(collisionAction);
+        options.addOption(richPct);
+        options.addOption(mediumPct);
+        options.addOption(poorPct);
+        options.addOption(speedFact);
+        options.addOption(minGap);
         options.addOption(seed);
         options.addOption(agentSeed);
         options.addOption(statistics);
+        options.addOption(routeStatistics);
 
         return options;
     }

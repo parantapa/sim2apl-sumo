@@ -1,9 +1,9 @@
 package agent.planscheme;
 
-import agent.plan.AdjustCO2BasedAccelerationPlan;
-import agent.plan.AdjustCo2BasedSpeedPlan;
-import agent.trigger.goal.AdjustCo2BasedAccelerationMaintainanceGoal;
-import agent.trigger.goal.AdjustCo2BasedSpeedMaintenanceGoal;
+import agent.plan.SetMaxSpeedPlan;
+import agent.plan.SetMinGapPlan;
+import agent.trigger.goal.SetMaxSpeedMaintananceGoal;
+import agent.trigger.goal.SetMinGapMaintananceGoal;
 import nl.uu.cs.iss.ga.sim2apl.core.agent.AgentContextInterface;
 import nl.uu.cs.iss.ga.sim2apl.core.agent.Trigger;
 import nl.uu.cs.iss.ga.sim2apl.core.plan.Plan;
@@ -15,10 +15,10 @@ public class SumoCarGoalPlanScheme implements PlanScheme {
     public Plan instantiate(Trigger trigger, AgentContextInterface agentContextInterface) {
         Plan plan = Plan.UNINSTANTIATED;
 
-        if(trigger instanceof AdjustCo2BasedSpeedMaintenanceGoal) {
-            plan = new AdjustCo2BasedSpeedPlan();
-        } else if(trigger instanceof AdjustCo2BasedAccelerationMaintainanceGoal) {
-            plan = new AdjustCO2BasedAccelerationPlan();
+        if(trigger instanceof SetMaxSpeedMaintananceGoal) {
+            plan = new SetMaxSpeedPlan();
+        } else if (trigger instanceof SetMinGapMaintananceGoal) {
+            plan = new SetMinGapPlan();
         }
 
         if(plan != Plan.UNINSTANTIATED) {

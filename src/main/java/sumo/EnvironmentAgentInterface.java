@@ -41,6 +41,12 @@ public class EnvironmentAgentInterface {
     private Platform platform;
     private SumoEnvironmentInterface environmentInterface;
 
+    /**
+     * Basis for agent poor/rich distribution
+     */
+    private WeightedRandomBag<String> agentTypesDistribution;
+    private Institution institution = new Institution();
+
     /** **/
     private final int desiredNOfCars;
     private int routesCounter = 0;
@@ -69,6 +75,8 @@ public class EnvironmentAgentInterface {
         if (seed != null) {
             rnd.setSeed(Long.parseLong(seed));
         }
+
+        parseDistribution(parsedArguments, rnd);
 
         DefaultBlockingTickExecutor executor = new DefaultBlockingTickExecutor(4, rnd);
         this.platform = Platform.newPlatform(executor, new FIPAMessenger());
@@ -101,6 +109,13 @@ public class EnvironmentAgentInterface {
     }
 
     /**
+     * Obtain a reference to the institution enforcing norms
+     */
+    public Institution getInstitution() {
+        return institution;
+    }
+
+    /**
      * Create a unique route ID. This is just an incremental ID string.
      *
      * @return Unique route ID for use in SUMO
@@ -112,12 +127,41 @@ public class EnvironmentAgentInterface {
     }
 
     /**
+     * Instantiate the SimConfig parameters from command line arguments
+     * @param args  Reference to command line arguments
+     */
+    private void parseDistribution(CommandLine args, Random rnd) {
+        double pctRich = Double.parseDouble(args.getOptionValue(SimConfig.RICH_TYPE));
+        double pctMedium = Double.parseDouble(args.getOptionValue(SimConfig.MEDIUM_TYPE));
+        double pctPoor = Double.parseDouble(args.getOptionValue(SimConfig.POOR_TYPE));
+
+        double total = pctRich + pctMedium + pctPoor;
+
+        if(total != 100) {
+            throw new IllegalStateException("Total percentage of agent types (rich + medium + poor) needs to be 100");
+        }
+
+        this.agentTypesDistribution = new WeightedRandomBag<>(rnd);
+
+        agentTypesDistribution.addEntry(SimConfig.RICH_TYPE, pctRich);
+        agentTypesDistribution.addEntry(SimConfig.POOR_TYPE, pctPoor);
+        agentTypesDistribution.addEntry(SimConfig.MEDIUM_TYPE, pctMedium);
+
+        SimConfig.setPctRich(pctRich);
+        SimConfig.setPctPoor(pctPoor);
+        SimConfig.setPctMedium(pctMedium);
+
+        SimConfig.setSpeedLimitFactor(Double.parseDouble(args.getOptionValue("speed-reduction")));
+        SimConfig.setMinGap(Double.parseDouble(args.getOptionValue("min-gap")));
+    }
+
+    /**
      * Construct the initial set of agents, based on the number of agents specified in the command line arguments
      */
     private void createInitialAgents() {
         LOG.info("Creating " + this.desiredNOfCars + " cars");
         for (int i = 0; i < this.desiredNOfCars; i++) {
-            SumoAPLAgent agent = InstantiateAgent(i);
+            SumoAPLAgent agent = InstantiateAgent(i, agentTypesDistribution.getRandom());
             if (agent != null) {
                 this.sumoAgents.put(agent.getSumoID(), agent);
             }
@@ -130,13 +174,13 @@ public class EnvironmentAgentInterface {
      * @param agentIndex Index of the agent (used for incremental ID generation)
      * @return SumoAPLAgent object
      */
-    private SumoAPLAgent InstantiateAgent(int agentIndex) {
+    private SumoAPLAgent InstantiateAgent(int agentIndex, String type) {
         String agentID = String.format("%s-%d", SumoCar2APLAgent.TYPE_ID, agentIndex);
         LOG.fine("Constructing agent " + agentID);
         SumoCar2APLAgent agentInterface = new SumoCar2APLAgent(agentID);
 
         AgentArguments args = new AgentArguments();
-        args.addContext(new CarContext(this, agentInterface));
+        args.addContext(new CarContext(this, agentInterface, type));
         args.addExternalTriggerPlanScheme(new SumoCarExternalTriggerPlanScheme());
         args.addGoalPlanScheme(new SumoCarGoalPlanScheme());
         args.addInitialPlan(new CreateRoutePlan());
