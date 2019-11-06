@@ -6,31 +6,31 @@ import com.google.gson.JsonObject;
 import de.tudresden.sumo.cmd.Vehicle;
 import de.tudresden.sumo.util.SumoCommand;
 
-public class AdjustCO2BasedAccelerationPlanMessage implements PlanMessage {
+public class SetMinGapPlanMessage implements PlanMessage {
     public static Gson gson = new Gson();
     
     public String sumoID;
-    public double acceleration;
+    public double minGap;
     
-    public AdjustCO2BasedAccelerationPlanMessage() {
+    public SetMinGapPlanMessage() {
         this.sumoID = null;
-        this.acceleration = 0.0;
+        this.minGap = 0.0;
     }
 
-    public AdjustCO2BasedAccelerationPlanMessage(String sumoID, double acceleration) {
+    public SetMinGapPlanMessage(String sumoID, double minGap) {
         this.sumoID = sumoID;
-        this.acceleration = acceleration;
+        this.minGap = minGap;
     }
     
     @Override
     public SumoCommand getSumoCommand() {
-        return Vehicle.setAccel(sumoID, acceleration);
+        return Vehicle.setMinGap(sumoID, minGap);
     }
 
     @Override
     public String toJson() {
         JsonObject message = new JsonObject();
-        message.addProperty("class", "AdjustCO2BasedAccelerationPlanMessage");
+        message.addProperty("class", "SetMinGapPlanMessage");
         
         JsonElement instance = gson.toJsonTree(this);
         message.add("instance", instance);

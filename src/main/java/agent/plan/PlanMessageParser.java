@@ -19,10 +19,10 @@ public class PlanMessageParser {
         JsonElement instance = mobj.get("instance");
         
         PlanMessage message;
-        if ("AdjustCO2BasedAccelerationPlanMessage".equals(klass)) {
-            message = gson.fromJson(instance, AdjustCO2BasedAccelerationPlanMessage.class);
-        } else if ("AdjustCo2BasedSpeedPlanMessage".equals(klass)) {
-            message = gson.fromJson(instance, AdjustCo2BasedSpeedPlanMessage.class);
+        if ("SetMinGapPlanMessage".equals(klass)) {
+            message = gson.fromJson(instance, SetMinGapPlanMessage.class);
+        } else if ("SetMaxSpeedPlanMessage".equals(klass)) {
+            message = gson.fromJson(instance, SetMaxSpeedPlanMessage.class);
         } else if ("CreateRoutePlanMessage".equals(klass)) {
             message = gson.fromJson(instance, CreateRoutePlanMessage.class);
         } else if ("EnterWorldPlanMessage".equals(klass)) {

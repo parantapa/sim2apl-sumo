@@ -3,10 +3,7 @@ package sumo;
 import agent.plan.PlanMessage;
 import agent.plan.PlanMessageParser;
 import com.sun.istack.Nullable;
-import de.tudresden.sumo.cmd.Edge;
-import de.tudresden.sumo.cmd.Route;
-import de.tudresden.sumo.cmd.Simulation;
-import de.tudresden.sumo.cmd.Vehicle;
+import de.tudresden.sumo.cmd.*;
 import de.tudresden.sumo.config.Constants;
 import de.tudresden.sumo.util.SumoCommand;
 import de.tudresden.ws.container.SumoStage;
@@ -74,6 +71,8 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
      * Various parameters from the SUMO environment
      **/
     public int simulationTime = 0;
+
+    @Deprecated
     private double averageCO2, averageMaxSpeed, averageAcceleration;
 
     /**
@@ -84,7 +83,8 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
     /**
      * For gathering statistics
      **/
-    private String statisticsFile = null;
+    private String agentStatisticsFile = null;
+    private String routesStatisticsFile = null;
 
     /**
      * Default constructor
@@ -100,7 +100,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         this.agentRnd = agentRandom;
         this.rnd = new Random();
         String systemSeed = args.getOptionValue("random-seed");
-        if(systemSeed != null) {
+        if (systemSeed != null) {
             this.rnd.setSeed(Long.parseLong(systemSeed));
             LOG.fine("Created random object for system using seed" + systemSeed);
         } else {
@@ -111,8 +111,24 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
             this.stepLength = args.getOptionValue("step-length");
         if (args.hasOption("collision.action"))
             this.collisionAction = args.getOptionValue("collision.action");
-        if (args.hasOption("statistics"))
-            this.statisticsFile = generateStatisticsDirectory(args);
+        if (args.hasOption("agent-statistics")) {
+            if(args.getOptionValue("agent-statistics") == null) {
+                LOG.info("Agent Statistics flag provided without argument specifying file. Generating statistics file name");
+                this.agentStatisticsFile = generateStatisticsDirectory(args, "agents");
+            } else {
+                LOG.info("Agent statistics will be logged to provided file handler: " + args.getOptionValue("agent-statistics"));
+                this.agentStatisticsFile = args.getOptionValue("agent-statistics");
+            }
+        }
+        if (args.hasOption("route-statistics")) {
+            if(args.getOptionValue("route-statistics") == null) {
+                LOG.info("Routes Statistics flag provided without argument specifying file. Generating statistics file name");
+                this.routesStatisticsFile = generateStatisticsDirectory(args, "routes");
+            } else {
+                LOG.info("Routes statistics will be logged to provided file handler: " + args.getOptionValue("route-statistics"));
+                this.routesStatisticsFile = args.getOptionValue("route-statistics");
+            }
+        }
 
         startConnection();
     }
@@ -122,9 +138,6 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         LOG.fine("Tick pre-hook called");
         resetArrived();
         updateActiveAgents();
-        updateAverageValues();
-        LOG.info(String.format("Average speed: %.2f\t\t Average acceleration: %.2f\t\tAverage CO2: %.2f\n",
-                this.averageMaxSpeed, this.averageAcceleration, this.averageCO2));
     }
 
     @Override
@@ -215,7 +228,9 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         return this.networkEdges.get(this.agentRnd.nextInt(this.networkEdges.size()));
     }
 
-    public String getRandomRoute() { return this.routes.get(this.agentRnd.nextInt(this.routes.size())); }
+    public String getRandomRoute() {
+        return this.routes.get(this.agentRnd.nextInt(this.routes.size()));
+    }
 
     /**
      * Get a random lane on the given edge. 0 if the action could not succeed
@@ -233,30 +248,15 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
     }
 
     /**
-     * Get the average CO2 emission of agents after the last executed simulation step
-     *
-     * @return Average CO2 emission of agents
+     * Get the maximum speed associated to the specified lane
      */
-    public double getAverageCO2() {
-        return averageCO2;
-    }
-
-    /**
-     * Get the average maximum speed of agents after the last simulation step
-     *
-     * @return Average maximum speed of agents
-     */
-    public double getAverageMaxSpeed() {
-        return averageMaxSpeed;
-    }
-
-    /**
-     * Get the average acceleration of agents after the last simulation step
-     *
-     * @return Average acceleration of agents
-     */
-    public double getAverageAcceleration() {
-        return averageAcceleration;
+    public double getLaneMaxSpeed(String laneID) {
+        try {
+            return (double) this.connection.do_job_get(Lane.getMaxSpeed(laneID));
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Could not get maximum speed for lane " + laneID, e);
+            return Double.POSITIVE_INFINITY;
+        }
     }
 
     /**
@@ -307,8 +307,12 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         if (this.netFile != null)
             this.connection.addOption("net-file", this.netFile);
 
-        if (this.statisticsFile != null)
-            this.connection.addOption("fcd-output", this.statisticsFile);
+        if (this.agentStatisticsFile != null) {
+            this.connection.addOption("fcd-output", this.agentStatisticsFile);
+        }
+        if (this.routesStatisticsFile != null) {
+            this.connection.addOption("tripinfo-output", this.routesStatisticsFile);
+        }
 
         LOG.info("Starting SUMO with following command using connection " + this.connection.toString());
 
@@ -339,10 +343,11 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
 
     /**
      * Generate a log file name for passing to SUMO
-     * @param args  Parsed command line arguments
-     * @return  Log file name in OUTPUT directory
+     *
+     * @param args Parsed command line arguments
+     * @return Log file name in OUTPUT directory
      */
-    private String generateStatisticsDirectory(CommandLine args) {
+    private String generateStatisticsDirectory(CommandLine args, String typeIdentifier) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH'h'mm'm'ss.SSS", Locale.ENGLISH);
         String time = formatter.format(LocalDateTime.now());
 
@@ -350,19 +355,20 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         String iterationFileInfo = iterations > 0 ? String.format("_%d-iterations", iterations) : "";
 
         String identifier = new File(this.configFile).getName().toLowerCase();
-        if(identifier.endsWith("sumo.cfg"))
+        if (identifier.endsWith("sumo.cfg"))
             identifier = identifier.substring(0, identifier.length() - "sumo.cfg".length() - 1);
-        if(identifier.endsWith("sumocfg"))
+        if (identifier.endsWith("sumocfg"))
             identifier = identifier.substring(0, identifier.length() - "sumocfg".length() - 1);
         else if (identifier.contains("sumo"))
             identifier = identifier.substring(0, identifier.indexOf("sumo"));
 
-        String logFile = String.format("%s/%s_%s_%d-Cars%s.log",
+        String logFile = String.format("%s/%s_%s_%d-Cars%s.%s.log",
                 SumoEnvironmentInterface.LOG_DIR,
                 time,
                 identifier,
                 Integer.parseInt(args.getOptionValue("number-of-cars")),
-                iterationFileInfo
+                iterationFileInfo,
+                typeIdentifier
         );
 
         LOG.info("SUMO state will be logged to " + logFile);
@@ -380,7 +386,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
     private String convertRelativeToAbsolutePath(String configname) {
         LOG.fine("Trying to resolve config file \"" + configname + "\"");
         URL resourceURL = getClass().getClassLoader().getResource(configname);
-        if(new File(configname).exists()) {
+        if (new File(configname).exists()) {
             // Path was absolute
             return configname;
         } else if (resourceURL != null) {
@@ -389,7 +395,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         } else {
             // File is not a resource
             Path path = new File(".").toPath().resolve(configname);
-            if(path.toFile().exists()) {
+            if (path.toFile().exists()) {
                 return path.toAbsolutePath().toString();
             }
         }
@@ -456,6 +462,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
      * <p>
      * Averages are calculated from the perspective of all active agents.
      */
+    @Deprecated
     private void updateAverageValues() {
         List<String> vehicles;
         double avgCO2 = 0;

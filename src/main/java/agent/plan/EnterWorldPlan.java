@@ -1,7 +1,8 @@
 package agent.plan;
 
 import agent.context.CarContext;
-import agent.trigger.goal.AdjustCo2BasedSpeedMaintenanceGoal;
+import agent.trigger.goal.SetMaxSpeedMaintananceGoal;
+import agent.trigger.goal.SetMinGapMaintananceGoal;
 import nl.uu.cs.iss.ga.sim2apl.core.agent.PlanToAgentInterface;
 import nl.uu.cs.iss.ga.sim2apl.core.plan.Plan;
 import nl.uu.cs.iss.ga.sim2apl.core.plan.PlanExecutionError;
@@ -34,8 +35,8 @@ public class EnterWorldPlan extends Plan {
 
         LOG.fine("Agent " + planToAgentInterface.getAgentID().getUuID() + " entered world at route " + context.getRouteID());
 
-//        planToAgentInterface.adoptGoal(new AdjustCo2BasedAccelerationMaintainanceGoal());
-        planToAgentInterface.adoptGoal(new AdjustCo2BasedSpeedMaintenanceGoal());
+        planToAgentInterface.adoptGoal(new SetMaxSpeedMaintananceGoal());
+        planToAgentInterface.adoptGoal(new SetMinGapMaintananceGoal());
 
         setFinished(true);
         
