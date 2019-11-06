@@ -89,21 +89,20 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
      *
      * @param args The parsed command line arguments
      */
-    public SumoEnvironmentInterface(CommandLine args, Random systemRandom) {
+    public SumoEnvironmentInterface(CommandLine args, Random agentRandom) {
         LOG.finer("Constructing SUMO environment interface");
         this.sumoBinary = args.getOptionValue("sumo-binary");
         this.configFile = convertRelativeToAbsolutePath(args.getOptionValue("configuration-file"));
         this.netFile = args.hasOption("net-file") ? convertRelativeToAbsolutePath(args.getOptionValue("net-file")) : null;
 
-        this.rnd = systemRandom;
-        String agentSeed = args.getOptionValue("agent-seed");
-        if(agentSeed != null) {
-            this.agentRnd = new Random();
-            this.agentRnd.setSeed(Long.parseLong(agentSeed));
-            LOG.finer("Created random object for agents using seed" + agentSeed);
+        this.agentRnd = agentRandom;
+        this.rnd = new Random();
+        String systemSeed = args.getOptionValue("random-seed");
+        if(systemSeed != null) {
+            this.rnd.setSeed(Long.parseLong(systemSeed));
+            LOG.fine("Created random object for system using seed" + systemSeed);
         } else {
-            this.agentRnd = this.rnd;
-            LOG.finer("No agent seed provided. Using system seed for agents");
+            LOG.fine("No system seed provided. Random operations will really be random");
         }
 
         if (args.hasOption("step-length"))
