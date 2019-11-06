@@ -33,7 +33,7 @@ import java.util.logging.Logger;
  */
 public class EnvironmentAgentInterface {
 
-    private static final Logger LOG = Logger.getLogger(SumoEnvironmentInterface.class.getName());
+    private static final Logger LOG = Logger.getLogger(EnvironmentAgentInterface.class.getName());
 
     /**
      * Basic Simulation classes
