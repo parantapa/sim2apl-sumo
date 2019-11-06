@@ -44,9 +44,15 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
     private String stepLength = "1";
 
     /**
-     * A Java Random object, to make random choices deterministic (if seed provided)
+     * A Java Random object, to make random choices deterministic (if seed provided). Used by the system to shuffle
+     * order of agent execution and agent action application. Used for reproducibility across compute nodes
      **/
     private final Random rnd;
+
+    /**
+     * A Java Random object, used by agents for action selection
+     */
+    private final Random agentRnd;
 
     /**
      * A set to keep track of agents active and present in the SUMO environment
@@ -91,6 +97,13 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         if (seed != null) {
             this.rnd.setSeed(Long.parseLong(seed));
         }
+        String agentSeed = args.getOptionValue("agent-seed");
+        if(agentSeed != null) {
+            this.agentRnd = new Random();
+            this.agentRnd.setSeed(Long.parseLong(agentSeed));
+        } else {
+            this.agentRnd = rnd;
+        }
 
         if (args.hasOption("step-length"))
             this.stepLength = args.getOptionValue("step-length");
@@ -117,7 +130,11 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
     public void tickPostHook(long l, int i, HashMap<AgentID, List<Object>> hashMap) {
         System.out.format("Tick %d took %d milliseconds. %d agents produced actions\n", l, i, hashMap.size());
 
-        for (AgentID aid : hashMap.keySet()) {
+        List<AgentID> processAIDList = new ArrayList<>(hashMap.keySet());
+        processAIDList.sort(Comparator.comparing(AgentID::getUuID));
+        Collections.shuffle(processAIDList, this.rnd);
+
+        for (AgentID aid : processAIDList) {
             for (Object o : hashMap.get(aid)) {
                 try {
                     this.connection.do_job_set((SumoCommand) o);
@@ -187,10 +204,10 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
      * @return Random edge ID
      */
     public String getRandomEdge() {
-        return this.networkEdges.get(this.rnd.nextInt(this.networkEdges.size()));
+        return this.networkEdges.get(this.agentRnd.nextInt(this.networkEdges.size()));
     }
 
-    public String getRandomRoute() { return this.routes.get(this.rnd.nextInt(this.routes.size())); }
+    public String getRandomRoute() { return this.routes.get(this.agentRnd.nextInt(this.routes.size())); }
 
     /**
      * Get a random lane on the given edge. 0 if the action could not succeed
@@ -200,7 +217,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
      */
     public byte getLaneForEdge(String edgeID) {
         try {
-            return (byte) this.rnd.nextInt((int) this.connection.do_job_get(Edge.getLaneNumber(edgeID)));
+            return (byte) this.agentRnd.nextInt((int) this.connection.do_job_get(Edge.getLaneNumber(edgeID)));
         } catch (Exception e) {
             System.err.println("Could not get lane for edge " + edgeID);
             System.err.println(e.getLocalizedMessage());
@@ -266,7 +283,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
      * @return Java Random object. If a seed was provided in the startup arguments, that seed is used in this object.
      */
     public Random getRandom() {
-        return this.rnd;
+        return this.agentRnd;
     }
 
     /**
