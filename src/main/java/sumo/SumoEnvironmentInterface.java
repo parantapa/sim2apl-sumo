@@ -86,23 +86,19 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
      *
      * @param args The parsed command line arguments
      */
-    public SumoEnvironmentInterface(CommandLine args) {
+    public SumoEnvironmentInterface(CommandLine args, Random systemRandom) {
 
         this.sumoBinary = args.getOptionValue("sumo-binary");
         this.configFile = convertRelativeToAbsolutePath(args.getOptionValue("configuration-file"));
         this.netFile = args.hasOption("net-file") ? convertRelativeToAbsolutePath(args.getOptionValue("net-file")) : null;
 
-        String seed = args.getOptionValue("random-seed");
-        this.rnd = new Random();
-        if (seed != null) {
-            this.rnd.setSeed(Long.parseLong(seed));
-        }
+        this.rnd = systemRandom;
         String agentSeed = args.getOptionValue("agent-seed");
         if(agentSeed != null) {
             this.agentRnd = new Random();
             this.agentRnd.setSeed(Long.parseLong(agentSeed));
         } else {
-            this.agentRnd = rnd;
+            this.agentRnd = this.rnd;
         }
 
         if (args.hasOption("step-length"))
@@ -114,8 +110,6 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
 
         startConnection();
     }
-
-
 
     @Override
     public void tickPreHook(long l) {
@@ -162,6 +156,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
     @Override
     public void simulationFinishedHook(long l, int i) {
         closeConnection();
+        System.exit(0);
     }
 
     /**

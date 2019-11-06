@@ -14,6 +14,7 @@ import nl.uu.cs.iss.ga.sim2apl.core.agent.AgentArguments;
 import nl.uu.cs.iss.ga.sim2apl.core.agent.AgentID;
 import nl.uu.cs.iss.ga.sim2apl.core.fipa.FIPAMessenger;
 import nl.uu.cs.iss.ga.sim2apl.core.platform.Platform;
+import nl.uu.cs.iss.ga.sim2apl.core.tick.DefaultBlockingTickExecutor;
 import nl.uu.cs.iss.ga.sim2apl.core.tick.DefaultSimulationEngine;
 import org.apache.commons.cli.CommandLine;
 
@@ -21,6 +22,7 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * The EnvironmentAgentInterface is the coupling between the Sim2APL platform and the SUMO environment.
@@ -57,8 +59,15 @@ public class EnvironmentAgentInterface {
         if (parsedArguments.hasOption("number-of-iterations"))
             nIterations = Integer.parseInt(parsedArguments.getOptionValue("number-of-iterations"));
 
-        this.platform = Platform.newPlatform(4, new FIPAMessenger());
-        this.environmentInterface = new SumoEnvironmentInterface(parsedArguments);
+        String seed = parsedArguments.getOptionValue("random-seed");
+        Random rnd = new Random();
+        if (seed != null) {
+            rnd.setSeed(Long.parseLong(seed));
+        }
+
+        DefaultBlockingTickExecutor executor = new DefaultBlockingTickExecutor(4, rnd);
+        this.platform = Platform.newPlatform(executor, new FIPAMessenger());
+        this.environmentInterface = new SumoEnvironmentInterface(parsedArguments, rnd);
         this.environmentInterface.addEnvironmentListener(this);
         createInitialAgents();
 
