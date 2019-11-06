@@ -67,7 +67,7 @@ public class EnvironmentAgentInterface {
         if (parsedArguments.hasOption("number-of-iterations"))
             nIterations = Integer.parseInt(parsedArguments.getOptionValue("number-of-iterations"));
 
-        String seed = parsedArguments.getOptionValue("random-seed");
+        String seed = parsedArguments.getOptionValue("agent-seed");
         Random rnd = new Random();
         if (seed != null) {
             rnd.setSeed(Long.parseLong(seed));
