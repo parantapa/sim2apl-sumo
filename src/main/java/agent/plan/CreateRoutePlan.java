@@ -9,6 +9,7 @@ import nl.uu.cs.iss.ga.sim2apl.core.plan.PlanExecutionError;
 import sumo.EnvironmentAgentInterface;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * A plan to create a new random route in the SUMO environment. This plan should be executed always before
@@ -20,11 +21,13 @@ import java.util.List;
  * agent adopts the plan to enter the world right after it has created and uploaded its new route.
  */
 public class CreateRoutePlan extends Plan {
+    private static final Logger LOG = Logger.getLogger(CreateRoutePlan.class.getName());
 
     public CreateRoutePlan() { }
 
     @Override
     public String execute(PlanToAgentInterface planToAgentInterface) throws PlanExecutionError {
+        LOG.fine("Agent " + planToAgentInterface.getAgentID().getUuID() + " executing CreateRoutePlan plan");
         CarContext context = planToAgentInterface.getContext(CarContext.class);
         EnvironmentAgentInterface eaInterface = context.getEnvironmentAgentInterface();
 //
@@ -63,6 +66,8 @@ public class CreateRoutePlan extends Plan {
 
         String routeID = eaInterface.getEnvironmentInterface().getRandomRoute();
         List<String> routeEdges = (List<String>) eaInterface.getEnvironmentInterface().do_job_get(Route.getEdges(routeID));
+        LOG.fine("Agent " + planToAgentInterface.getAgentID().getUuID() + "picked random route " +
+                routeID + " with " +routeEdges.size() + " edges");
         context.updateRoute(routeEdges.get(0), routeEdges, routeID);
         return  null;
     }

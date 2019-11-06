@@ -14,6 +14,7 @@ import nl.uu.cs.iss.ga.sim2apl.core.agent.AgentArguments;
 import nl.uu.cs.iss.ga.sim2apl.core.agent.AgentID;
 import nl.uu.cs.iss.ga.sim2apl.core.fipa.FIPAMessenger;
 import nl.uu.cs.iss.ga.sim2apl.core.platform.Platform;
+import nl.uu.cs.iss.ga.sim2apl.core.tick.DefaultBlockingTickExecutor;
 import nl.uu.cs.iss.ga.sim2apl.core.tick.DefaultSimulationEngine;
 import org.apache.commons.cli.CommandLine;
 
@@ -24,6 +25,9 @@ import java.util.Map;
 import nl.uu.cs.iss.ga.sim2apl.core.tick.DefaultBlockingTickExecutor;
 import nl.uu.cs.iss.ga.sim2apl.core.tick.MatrixTickExecutor;
 import nl.uu.cs.iss.ga.sim2apl.core.tick.TickExecutor;
+import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * The EnvironmentAgentInterface is the coupling between the Sim2APL platform and the SUMO environment.
@@ -31,6 +35,8 @@ import nl.uu.cs.iss.ga.sim2apl.core.tick.TickExecutor;
  * and the SUMO ID, so the corresponding 2APL agent can be found for any SUMO agent, and vice versa.
  */
 public class EnvironmentAgentInterface {
+
+    private static final Logger LOG = Logger.getLogger(EnvironmentAgentInterface.class.getName());
 
     /**
      * Basic Simulation classes
@@ -55,22 +61,31 @@ public class EnvironmentAgentInterface {
      * @param parsedArguments Parsed command line arguments
      */
     public EnvironmentAgentInterface(CommandLine parsedArguments) {
+        LOG.fine("Constructing EnvironmentAgentInterface");
         this.desiredNOfCars = Integer.parseInt(parsedArguments.getOptionValue("number-of-cars"));
         int nIterations = -1;
         if (parsedArguments.hasOption("number-of-iterations"))
             nIterations = Integer.parseInt(parsedArguments.getOptionValue("number-of-iterations"));
-        
+
+        String seed = parsedArguments.getOptionValue("random-seed");
+        Random rnd = new Random();
+        if (seed != null) {
+            rnd.setSeed(Long.parseLong(seed));
+        }
+
         TickExecutor executor;
         if (parsedArguments.hasOption("use-matrix") && Boolean.parseBoolean(parsedArguments.getOptionValue("use-matrix"))) {
-            executor = new MatrixTickExecutor(4);
+            executor = new MatrixTickExecutor(4, rnd);
         } else {
-            executor = new DefaultBlockingTickExecutor(4);
+            executor = new DefaultBlockingTickExecutor(4, rnd);
         }
 
         this.platform = Platform.newPlatform(executor, new FIPAMessenger());
-        this.environmentInterface = new SumoEnvironmentInterface(parsedArguments);
+        this.environmentInterface = new SumoEnvironmentInterface(parsedArguments, rnd);
         this.environmentInterface.addEnvironmentListener(this);
         createInitialAgents(parsedArguments.getOptionValue("car-id-prefix"));
+
+        LOG.info("Starting simulation with " + nIterations + " steps");
 
         DefaultSimulationEngine engine = new DefaultSimulationEngine(platform, nIterations, this.environmentInterface);
         engine.start();
@@ -109,7 +124,7 @@ public class EnvironmentAgentInterface {
      * Construct the initial set of agents, based on the number of agents specified in the command line arguments
      */
     private void createInitialAgents(String carIdPrefix) {
-        System.out.println("Creating " + this.desiredNOfCars + " cars");
+        LOG.info("Creating " + this.desiredNOfCars + " cars");
         for (int i = 0; i < this.desiredNOfCars; i++) {
             SumoAPLAgent agent = InstantiateAgent(carIdPrefix, i);
             if (agent != null) {
@@ -126,6 +141,8 @@ public class EnvironmentAgentInterface {
      */
     private SumoAPLAgent InstantiateAgent(String carIdPrefix, int agentIndex) {
         String agentID = String.format("%s-%s-%d", SumoCar2APLAgent.TYPE_ID, carIdPrefix, agentIndex);
+        LOG.fine("Constructing agent " + agentID);
+
         SumoCar2APLAgent agentInterface = new SumoCar2APLAgent(agentID);
 
         AgentArguments args = new AgentArguments();
@@ -142,7 +159,7 @@ public class EnvironmentAgentInterface {
             agent = new Agent(this.platform, args, id);
             agentInterface.setAgent(agent);
         } catch (URISyntaxException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Error creating agent " + agentID, e);
             return null;
         }
 

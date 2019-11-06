@@ -22,6 +22,8 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * The SUMO environment interface handles communication with the environment.
@@ -31,6 +33,7 @@ import java.util.*;
  * This class also handles logging and collection of statistics from the SUMO environment
  */
 public class SumoEnvironmentInterface implements TickHookProcessor {
+    private static final Logger LOG = Logger.getLogger(SumoEnvironmentInterface.class.getName());
 
     private static final String LOG_DIR = "output";
 
@@ -88,23 +91,21 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
      *
      * @param args The parsed command line arguments
      */
-    public SumoEnvironmentInterface(CommandLine args) {
-
+    public SumoEnvironmentInterface(CommandLine args, Random systemRandom) {
+        LOG.finer("Constructing SUMO environment interface");
         this.sumoBinary = args.getOptionValue("sumo-binary");
         this.configFile = convertRelativeToAbsolutePath(args.getOptionValue("configuration-file"));
         this.netFile = args.hasOption("net-file") ? convertRelativeToAbsolutePath(args.getOptionValue("net-file")) : null;
 
-        String seed = args.getOptionValue("random-seed");
-        this.rnd = new Random();
-        if (seed != null) {
-            this.rnd.setSeed(Long.parseLong(seed));
-        }
+        this.rnd = systemRandom;
         String agentSeed = args.getOptionValue("agent-seed");
         if(agentSeed != null) {
             this.agentRnd = new Random();
             this.agentRnd.setSeed(Long.parseLong(agentSeed));
+            LOG.finer("Created random object for agents using seed" + agentSeed);
         } else {
-            this.agentRnd = rnd;
+            this.agentRnd = this.rnd;
+            LOG.finer("No agent seed provided. Using system seed for agents");
         }
 
         if (args.hasOption("step-length"))
@@ -119,45 +120,53 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
 
     @Override
     public void tickPreHook(long l) {
+        LOG.fine("Tick pre-hook called");
         resetArrived();
         updateActiveAgents();
         updateAverageValues();
-        System.out.format("Average speed: %.2f\t\t Average acceleration: %.2f\t\tAverage CO2: %.2f\n",
-                this.averageMaxSpeed, this.averageAcceleration, this.averageCO2);
+        LOG.info(String.format("Average speed: %.2f\t\t Average acceleration: %.2f\t\tAverage CO2: %.2f\n",
+                this.averageMaxSpeed, this.averageAcceleration, this.averageCO2));
     }
 
     @Override
     public void tickPostHook(long l, int i, HashMap<AgentID, List<String>> hashMap) {
-        System.out.format("Tick %d took %d milliseconds. %d agents produced actions\n", l, i, hashMap.size());
-        for (AgentID aid : hashMap.keySet()) {
+        LOG.info(String.format("Tick %d took %d milliseconds. %d agents produced actions\n", l, i, hashMap.size()));
+        List<AgentID> processAIDList = new ArrayList<>(hashMap.keySet());
+        processAIDList.sort(Comparator.comparing(AgentID::getUuID));
+        Collections.shuffle(processAIDList, this.rnd);
+
+        for (AgentID aid : processAIDList) {
+            LOG.finer("Processing list of actions for agent " + aid.getUuID());
             for (String o : hashMap.get(aid)) {
                 PlanMessage message = PlanMessageParser.parse(o);
+
                 try {
                     this.connection.do_job_set(message.getSumoCommand());
                 } catch (IllegalStateException e) {
-                    System.err.println("Could not peform job " + o.toString());
-                    System.err.println(e.getLocalizedMessage());
+                    LOG.log(Level.SEVERE, "Could not peform job " + o.toString(), e);
                     closeConnection();
                     System.exit(10);
                 } catch (Exception e) {
-                    System.err.println("Could not perform job " + o.toString());
+                    LOG.log(Level.WARNING, "Could not perform job " + o.toString(), e);
                 }
             }
         }
 
         try {
+            LOG.fine("Requesting SUMO to perform time step");
             this.connection.do_timestep();
             this.simulationTime = (int) this.connection.do_job_get(Simulation.getCurrentTime());
         } catch (Exception e) {
-            System.err.println("Error performing time step");
-            System.err.println(e.getLocalizedMessage());
+            LOG.log(Level.SEVERE, "An error occurred while performing the time step", e);
             System.exit(4);
         }
     }
 
     @Override
     public void simulationFinishedHook(long l, int i) {
+        LOG.fine("Received simulation finished event from Simulation Engine. Closing SUMO connection");
         closeConnection();
+        System.exit(0);
     }
 
     /**
@@ -185,10 +194,14 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
             route = (SumoStage) this.connection.do_job_get(
                     Simulation.findRoute(sourceEdgeID, targetEdgeID, vehicleType, this.simulationTime, Constants.ROUTING_MODE_DEFAULT)
             );
-            if (route.edges.size() == 0) route = null;
+            if (route.edges.size() == 0) {
+                LOG.finer("Route from " + sourceEdgeID + " to " + targetEdgeID + " has no edges. Returning zero route");
+                route = null;
+            }
         } catch (Exception e) {
-            System.err.println("SUMO returned error when requesting route from edge " + sourceEdgeID + " to " + targetEdgeID + ":");
-            System.err.println(e.getLocalizedMessage());
+            LOG.log(Level.WARNING,
+                    "SUMO returned error when requesting route from edge " + sourceEdgeID + " to " + targetEdgeID,
+                    e);
         }
 
         return route;
@@ -215,8 +228,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         try {
             return (byte) this.agentRnd.nextInt((int) this.connection.do_job_get(Edge.getLaneNumber(edgeID)));
         } catch (Exception e) {
-            System.err.println("Could not get lane for edge " + edgeID);
-            System.err.println(e.getLocalizedMessage());
+            LOG.log(Level.WARNING, "Could not get lane for edge " + edgeID + ". Using default lane 0", e);
             return (byte) 0;
         }
     }
@@ -259,15 +271,14 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         try {
             return this.connection.do_job_get(cmd);
         } catch (TraCIException e) {
-            System.err.println(e.getLocalizedMessage());
+            LOG.log(Level.WARNING, "Error occurred performing GET job through TraaS", e);
             return null;
         } catch (IllegalStateException e) {
-            System.err.println(e.getLocalizedMessage());
-            e.printStackTrace();
+            LOG.log(Level.WARNING, "Error occurred performing GET in SUMO", e);
             System.exit(15);
             return null;
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.log(Level.WARNING, "Exception occurred performing GET job in SUMO", e);
             return null;
         }
     }
@@ -300,14 +311,15 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         if (this.statisticsFile != null)
             this.connection.addOption("fcd-output", this.statisticsFile);
 
+        LOG.info("Starting SUMO with following command using connection " + this.connection.toString());
+
         try {
             this.connection.runServer();
             this.networkEdges = (List<String>) this.connection.do_job_get(Edge.getIDList());
             this.routes = (List<String>) this.connection.do_job_get(Route.getIDList());
             return true;
         } catch (Exception e) {
-            System.err.println("Error trying to start a connection with SUMO:");
-            System.err.println(e.getLocalizedMessage());
+            LOG.log(Level.SEVERE, "Could not start connection with SUMO", e);
             System.exit(1);
             closeConnection();
             return false;
@@ -319,7 +331,10 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
      */
     private void closeConnection() {
         if (this.connection != null && !this.connection.isClosed()) {
+            LOG.info("Closing SUMO connection");
             this.connection.close();
+        } else {
+            LOG.info("Tried to close SUMO connection, but connection is already closed");
         }
     }
 
@@ -343,13 +358,17 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         else if (identifier.contains("sumo"))
             identifier = identifier.substring(0, identifier.indexOf("sumo"));
 
-        return String.format("%s/%s_%s_%d-Cars%s.log",
+        String logFile = String.format("%s/%s_%s_%d-Cars%s.log",
                 SumoEnvironmentInterface.LOG_DIR,
                 time,
                 identifier,
                 Integer.parseInt(args.getOptionValue("number-of-cars")),
                 iterationFileInfo
         );
+
+        LOG.info("SUMO state will be logged to " + logFile);
+
+        return logFile;
     }
 
     /**
@@ -360,7 +379,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
      * @return The absolute path of the configName file/location, if it exists. Null otherwise
      */
     private String convertRelativeToAbsolutePath(String configname) {
-        System.out.println("Trying to resolve " + configname);
+        LOG.fine("Trying to resolve config file \"" + configname + "\"");
         URL resourceURL = getClass().getClassLoader().getResource(configname);
         if(new File(configname).exists()) {
             // Path was absolute
@@ -390,7 +409,9 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         List<String> removedAgents;
         try {
             removedAgents = (List<String>) this.connection.do_job_get(Simulation.getArrivedIDList());
+            LOG.fine(removedAgents.size() + " agents arrived at the previous time step and have been removed from SUMO");
         } catch (Exception e) {
+            LOG.log(Level.WARNING, "Exception occurred requesting list of arrived vehicles", e);
             removedAgents = Collections.emptyList();
         }
 
@@ -417,9 +438,14 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         }
 
         for (String sumoAgentID : presentAgents) {
-            if (this.activeAgentIDs.add(sumoAgentID))
+            if (this.activeAgentIDs.add(sumoAgentID)) {
                 enteredAgents.add(sumoAgentID);
+                LOG.finer("SUMO agent " + sumoAgentID + " is now in the environment");
+            }
         }
+
+        LOG.fine(this.activeAgentIDs.size() + " agents active in the environment. " +
+                enteredAgents.size() + " entered during the last step");
 
         if (!enteredAgents.isEmpty()) {
             this.notifyAgentsEntered(enteredAgents);
@@ -451,8 +477,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
             this.averageMaxSpeed = avgSpeed / vehicles.size();
             this.averageAcceleration = avgAcceleration / vehicles.size();
         } catch (Exception e) {
-            System.err.println("Error trying to find average values:");
-            System.err.println(e.getLocalizedMessage());
+            LOG.log(Level.WARNING, "Could not update average values", e);
         }
     }
 

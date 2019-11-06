@@ -7,19 +7,27 @@ import nl.uu.cs.iss.ga.sim2apl.core.plan.Plan;
 import nl.uu.cs.iss.ga.sim2apl.core.plan.PlanExecutionError;
 import sumo.EnvironmentAgentInterface;
 
+import java.util.logging.Logger;
+
 /**
  * A plan to maximize acceleration while staying under the average CO2 emission of all
  * agents in the environment.
  */
 public class AdjustCO2BasedAccelerationPlan extends Plan {
+
+    private static final Logger LOG = Logger.getLogger(AdjustCO2BasedAccelerationPlan.class.getName());
+
     @Override
     public String execute(PlanToAgentInterface planToAgentInterface) throws PlanExecutionError {
+        LOG.fine("Agent " + planToAgentInterface.getAgentID().getUuID() + " executing AdjustCO2BasedAccelerationPlan plan");
         CarContext context = planToAgentInterface.getContext(CarContext.class);
         EnvironmentAgentInterface eaInterface = context.getEnvironmentAgentInterface();
 
-        if(!eaInterface.getEnvironmentInterface().isAgentActive(context.getAgentInterface().getSumoID()))
+        if(!eaInterface.getEnvironmentInterface().isAgentActive(context.getAgentInterface().getSumoID())) {
             // Do not try to take actions in the environment if you do not exist there
+            LOG.fine("Agent " + planToAgentInterface.getAgentID().getUuID() + "does not exist in environment yet. Skipping");
             return null;
+        }
 
         double avgCO2 = eaInterface.getEnvironmentInterface().getAverageCO2();
 
@@ -36,15 +44,20 @@ public class AdjustCO2BasedAccelerationPlan extends Plan {
 
         int accelerationCorrectionFactor = avgCO2 < myEmission ? -1 : 1;
 
+        LOG.fine("Agent " + planToAgentInterface.getAgentID().getUuID() + " has current CO2 emission of " +
+                myEmission + " which is " + (avgCO2 < myEmission ? "larger" : "smaller") + " than the average of " + avgCO2);
+
         setFinished(true);
 
         double newAcc = currentMaximumAcceleration + (accelerationCorrectionFactor * currentMaximumAcceleration * 0.1);
-        
         AdjustCO2BasedAccelerationPlanMessage message = new AdjustCO2BasedAccelerationPlanMessage(
+
                 context.getAgentInterface().getSumoID(),
                 (newAcc < .1 ? currentMaximumAcceleration : newAcc)
         );
-        
+
+        LOG.fine("Agent " + planToAgentInterface.getAgentID().getUuID() + " calculated new acceleration of " + newAcc);
+
         return message.toJson();
     }
 }
