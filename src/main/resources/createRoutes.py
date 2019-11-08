@@ -1,3 +1,5 @@
+#!/bin/python3
+
 import os, re, argparse, subprocess
 
 SUMO_HOME= os.environ.get("SUMO_HOME")

@@ -85,6 +85,8 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
      **/
     private String agentStatisticsFile = null;
     private String routesStatisticsFile = null;
+    private String emissionStatisticsFile = null;
+    private String summaryStatisticsFile = null;
 
     /**
      * Default constructor
@@ -111,24 +113,11 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
             this.stepLength = args.getOptionValue("step-length");
         if (args.hasOption("collision.action"))
             this.collisionAction = args.getOptionValue("collision.action");
-        if (args.hasOption("agent-statistics")) {
-            if(args.getOptionValue("agent-statistics") == null) {
-                LOG.info("Agent Statistics flag provided without argument specifying file. Generating statistics file name");
-                this.agentStatisticsFile = generateStatisticsDirectory(args, "agents");
-            } else {
-                LOG.info("Agent statistics will be logged to provided file handler: " + args.getOptionValue("agent-statistics"));
-                this.agentStatisticsFile = args.getOptionValue("agent-statistics");
-            }
-        }
-        if (args.hasOption("route-statistics")) {
-            if(args.getOptionValue("route-statistics") == null) {
-                LOG.info("Routes Statistics flag provided without argument specifying file. Generating statistics file name");
-                this.routesStatisticsFile = generateStatisticsDirectory(args, "routes");
-            } else {
-                LOG.info("Routes statistics will be logged to provided file handler: " + args.getOptionValue("route-statistics"));
-                this.routesStatisticsFile = args.getOptionValue("route-statistics");
-            }
-        }
+
+        this.agentStatisticsFile = parseStatisticsFile(args, "agent-statistics", "agent");
+        this.routesStatisticsFile = parseStatisticsFile(args, "route-statistics", "routes");
+        this.emissionStatisticsFile = parseStatisticsFile(args, "emission-statistics", "emission");
+        this.summaryStatisticsFile = parseStatisticsFile(args, "summary-statistics", "summary");
 
         startConnection();
     }
@@ -307,12 +296,10 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         if (this.netFile != null)
             this.connection.addOption("net-file", this.netFile);
 
-        if (this.agentStatisticsFile != null) {
-            this.connection.addOption("fcd-output", this.agentStatisticsFile);
-        }
-        if (this.routesStatisticsFile != null) {
-            this.connection.addOption("tripinfo-output", this.routesStatisticsFile);
-        }
+        if (this.agentStatisticsFile != null)  this.connection.addOption("fcd-output", this.agentStatisticsFile);
+        if (this.routesStatisticsFile != null)  this.connection.addOption("tripinfo-output", this.routesStatisticsFile);
+        if (this.emissionStatisticsFile != null)  this.connection.addOption("emission-output", this.emissionStatisticsFile);
+        if (this.summaryStatisticsFile != null) this.connection.addOption("summary", this.summaryStatisticsFile);
 
         LOG.info("Starting SUMO with following command using connection " + this.connection.toString());
 
@@ -342,6 +329,28 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
     }
 
     /**
+     * Determine file location for statistics file of this run, based on passed arguments
+     * @param args              CommandLine arguments
+     * @param argumentName      Argument name indicating the required statistics file
+     * @param typeIdentifier    Identifier of type of statistics (e.g. car, route, emission, etc)
+     * @return                  String containing path to file that should be used for logging these statistics
+     */
+    private String parseStatisticsFile(CommandLine args, String argumentName, String typeIdentifier) {
+        String statisticsFile = null;
+        if (args.hasOption(argumentName) || args.hasOption("full-statistics")) {
+            String value = args.getOptionValue(argumentName);
+            if(value == null) {
+                LOG.info(typeIdentifier + " statistics flag provided without argument specifying file. Generating statistics file name");
+                statisticsFile = generateStatisticsDirectory(args, typeIdentifier);
+            } else {
+                LOG.info(typeIdentifier + " statistics will be logged to provided file handler: " + value);
+                statisticsFile = value;
+            }
+        }
+        return statisticsFile;
+    }
+
+    /**
      * Generate a log file name for passing to SUMO
      *
      * @param args Parsed command line arguments
@@ -354,7 +363,18 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         int iterations = Integer.parseInt(args.getOptionValue("number-of-iterations"));
         String iterationFileInfo = iterations > 0 ? String.format("_%d-iterations", iterations) : "";
 
+        String logDir = SumoEnvironmentInterface.LOG_DIR;
+
+        if(args.hasOption("statistics-directory")) {
+            logDir = args.getOptionValue("statistics-directory");
+            if(!new File(logDir).isDirectory() && !new File(logDir).mkdirs()) {
+                LOG.warning("Could not create directory for logging. Using default");
+                logDir = SumoEnvironmentInterface.LOG_DIR;
+            }
+        }
+
         String identifier = new File(this.configFile).getName().toLowerCase();
+
         if (identifier.endsWith("sumo.cfg"))
             identifier = identifier.substring(0, identifier.length() - "sumo.cfg".length() - 1);
         if (identifier.endsWith("sumocfg"))
@@ -363,7 +383,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
             identifier = identifier.substring(0, identifier.indexOf("sumo"));
 
         String logFile = String.format("%s/%s_%s_%d-Cars%s.%s.log",
-                SumoEnvironmentInterface.LOG_DIR,
+                logDir,
                 time,
                 identifier,
                 Integer.parseInt(args.getOptionValue("number-of-cars")),
