@@ -168,7 +168,7 @@ public class Main {
                         "If reproducibility is not required, this seed is not necessary")
                 .build();
 
-        final Option statistics = Option.builder()
+        final Option agentStatistics = Option.builder()
                 .argName("Include agent level statistics")
                 .hasArg(true)
                 .optionalArg(true)
@@ -190,6 +190,47 @@ public class Main {
                     "name will be generated")
                 .build();
 
+        final Option emissionStatistics = Option.builder()
+                .argName("Include agent level statistics")
+                .hasArg(true)
+                .optionalArg(true)
+                .longOpt("emission-statistics")
+                .required(false)
+                .type(boolean.class)
+                .desc("Use SUMO logging to log emission statistics at each time step. If no file is specified, a file " +
+                        "name will be generated")
+                .build();
+
+        final Option summaryStatistics = Option.builder()
+                .argName("Include agent level statistics")
+                .hasArg(true)
+                .optionalArg(true)
+                .longOpt("summary-statistics")
+                .required(false)
+                .type(boolean.class)
+                .desc("Use SUMO logging to log summary statistics at each time step. If no file is specified, a file " +
+                        "name will be generated")
+                .build();
+
+        final Option statistics = Option.builder()
+                .argName("Include all possible statistics")
+                .hasArg(false)
+                .longOpt("full-statistics")
+                .required(false)
+                .desc("Use SUMO logging to log all statistics that can individually be toggled in this program." +
+                        "Optionally --statistics-directory to specify where the statistics will end up. File names" +
+                        "will be generated automatically. To specify individual file names, all statistics have to" +
+                        "be individually enabled")
+                .build();
+
+        final Option statisticsDir = Option.builder()
+                .argName("Directory")
+                .hasArg(true)
+                .longOpt("statistics-directory")
+                .desc("Specify the output directory of statistics files. Default is \"output\"." +
+                        "This option is only useful if you let this application generate file names for the" +
+                        "statistics automatically")
+                .build();
 
         final Options options = new Options();
 
@@ -207,8 +248,11 @@ public class Main {
         options.addOption(minGap);
         options.addOption(seed);
         options.addOption(agentSeed);
-        options.addOption(statistics);
+        options.addOption(agentStatistics);
         options.addOption(routeStatistics);
+        options.addOption(emissionStatistics);
+        options.addOption(statistics);
+        options.addOption(statisticsDir);
 
         return options;
     }
