@@ -184,7 +184,6 @@ public class EnvironmentAgentInterface {
         args.addExternalTriggerPlanScheme(new SumoCarExternalTriggerPlanScheme());
         args.addGoalPlanScheme(new SumoCarGoalPlanScheme());
         args.addInitialPlan(new CreateRoutePlan());
-        args.addInitialPlan(new EnterWorldPlan());
 
         Agent agent;
         try {

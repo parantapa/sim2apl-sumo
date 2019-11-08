@@ -62,16 +62,12 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
     /**
      * The edges making up the road network
      **/
-    private List<String> networkEdges;
     private List<String> routes;
 
     /**
      * Various parameters from the SUMO environment
      **/
     public int simulationTime = 0;
-
-    @Deprecated
-    private double averageCO2, averageMaxSpeed, averageAcceleration;
 
     /**
      * Observers listening to changes in the SUMO environment
@@ -204,15 +200,6 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         return route;
     }
 
-    /**
-     * Get a random edge in the road network
-     *
-     * @return Random edge ID
-     */
-    public String getRandomEdge() {
-        return this.networkEdges.get(this.agentRnd.nextInt(this.networkEdges.size()));
-    }
-
     public String getRandomRoute() {
         return this.routes.get(this.agentRnd.nextInt(this.routes.size()));
     }
@@ -301,7 +288,6 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
 
         try {
             this.connection.runServer();
-            this.networkEdges = (List<String>) this.connection.do_job_get(Edge.getIDList());
             this.routes = (List<String>) this.connection.do_job_get(Route.getIDList());
             return true;
         } catch (Exception e) {
@@ -471,58 +457,6 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         if (!enteredAgents.isEmpty()) {
             this.notifyAgentsEntered(enteredAgents);
         }
-    }
-
-    /**
-     * Calculate the average values for certain parameters in the system.
-     * <p>
-     * Averages are calculated from the perspective of all active agents.
-     */
-    @Deprecated
-    private void updateAverageValues() {
-        List<String> vehicles;
-        double avgCO2 = 0;
-        double avgSpeed = 0;
-        double avgAcceleration = 0;
-
-        try {
-            vehicles = (List<String>) this.connection.do_job_get(Vehicle.getIDList());
-            for (String vehicle : vehicles) {
-                double vCO2 = (double) this.connection.do_job_get(Vehicle.getCO2Emission(vehicle));
-                double vMaxSpeed = (double) this.connection.do_job_get(Vehicle.getMaxSpeed(vehicle));
-                double vMaxAcc = (double) this.connection.do_job_get(Vehicle.getAccel(vehicle));
-                avgCO2 += vCO2;
-                avgSpeed += vMaxSpeed;
-                avgAcceleration += vMaxAcc;
-            }
-            this.averageCO2 = avgCO2 / vehicles.size();
-            this.averageMaxSpeed = avgSpeed / vehicles.size();
-            this.averageAcceleration = avgAcceleration / vehicles.size();
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Could not update average values", e);
-        }
-    }
-
-    /**
-     * Helper method to automatically cast a SUMO command result to a double
-     *
-     * @param cmd Sumo command
-     * @return Sumo command casted to double
-     * @throws Exception Propegated error from TraaS job execution, or casting error
-     */
-    private double getDouble(SumoCommand cmd) throws Exception {
-        return (double) this.connection.do_job_get(cmd);
-    }
-
-    /**
-     * Helper method to automatically cast a SUMO command result to a String
-     *
-     * @param cmd Sumo command
-     * @return Sumo command casted to String
-     * @throws Exception Propegated error from TraaS job execution, or casting error
-     */
-    private String getString(SumoCommand cmd) throws Exception {
-        return (String) this.connection.do_job_get(cmd);
     }
 
     /**
