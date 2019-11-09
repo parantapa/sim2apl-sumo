@@ -251,6 +251,7 @@ public class Main {
         options.addOption(agentStatistics);
         options.addOption(routeStatistics);
         options.addOption(emissionStatistics);
+        options.addOption(summaryStatistics);
         options.addOption(statistics);
         options.addOption(statisticsDir);
 
