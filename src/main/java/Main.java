@@ -270,6 +270,7 @@ public class Main {
         options.addOption(useMatrix);
         options.addOption(carIDPrefix);
         options.addOption(emissionStatistics);
+        options.addOption(summaryStatistics);
         options.addOption(statistics);
         options.addOption(statisticsDir);
 
