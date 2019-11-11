@@ -165,16 +165,6 @@ public class Main {
          * SIMULATION
          * **/
 
-        final Option seed = Option.builder()
-                .argName("Seed")
-                .hasArg()
-                .longOpt("random-seed")
-                .required(false)
-                .type(Long.TYPE)
-                .desc("The seed uses by the system to order processes. This seed should be set when reproducibility" +
-                        "across multiple compute nodes is required")
-                .build();
-
         final Option agentSeed = Option.builder()
                 .argName("Agent seed")
                 .hasArg()
@@ -263,7 +253,6 @@ public class Main {
         options.addOption(poorPct);
         options.addOption(speedFact);
         options.addOption(minGap);
-        options.addOption(seed);
         options.addOption(agentSeed);
         options.addOption(agentStatistics);
         options.addOption(routeStatistics);

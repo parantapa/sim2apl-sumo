@@ -4,7 +4,6 @@ import agent.SumoAPLAgent;
 import agent.SumoCar2APLAgent;
 import agent.context.CarContext;
 import agent.plan.CreateRoutePlan;
-import agent.plan.EnterWorldPlan;
 import agent.planscheme.SumoCarExternalTriggerPlanScheme;
 import agent.planscheme.SumoCarGoalPlanScheme;
 import agent.trigger.external.EnteredWorldExternalTrigger;
@@ -16,15 +15,14 @@ import nl.uu.cs.iss.ga.sim2apl.core.fipa.FIPAMessenger;
 import nl.uu.cs.iss.ga.sim2apl.core.platform.Platform;
 import nl.uu.cs.iss.ga.sim2apl.core.tick.DefaultBlockingTickExecutor;
 import nl.uu.cs.iss.ga.sim2apl.core.tick.DefaultSimulationEngine;
+import nl.uu.cs.iss.ga.sim2apl.core.tick.MatrixTickExecutor;
+import nl.uu.cs.iss.ga.sim2apl.core.tick.TickExecutor;
 import org.apache.commons.cli.CommandLine;
 
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import nl.uu.cs.iss.ga.sim2apl.core.tick.DefaultBlockingTickExecutor;
-import nl.uu.cs.iss.ga.sim2apl.core.tick.MatrixTickExecutor;
-import nl.uu.cs.iss.ga.sim2apl.core.tick.TickExecutor;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -77,6 +75,9 @@ public class EnvironmentAgentInterface {
         Random rnd = new Random();
         if (seed != null) {
             rnd.setSeed(Long.parseLong(seed));
+            LOG.info("Seed provided for random agent actions was " + seed);
+        } else {
+            LOG.info("No agent seed specified. Using random number generator");
         }
 
         parseDistribution(parsedArguments, rnd);

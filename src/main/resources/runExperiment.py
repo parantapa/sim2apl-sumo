@@ -8,8 +8,7 @@ jar = "../../../target/sim2apl-SUMO-simulation-1.0-SNAPSHOT-jar-with-dependencie
 # net = "bilt/debilt.sumo.cfg"
 net = "eichstaedt/eichstaedt.sumo.cfg"
 
-seed = 42
-agentSeed = 1234
+agentSeed = 42
 
 timestamp = time.strftime("%Y-%m-%d-%H.%M.%S")
 
@@ -41,7 +40,7 @@ for n in ncars:
 				args = [java, "-jar", jar, "-s", "sumo", "-c", net, "-i", str(iterations), "--step-length", str(1), 
 				"--statistics-directory", logdir,
 					"--number-of-cars", str(n), "--rich", str(r), "--medium", medium, "--poor", poor,
-					"--speed-reduction", str(srf), "--min-gap", str(mg), "--random-seed", str(seed), "--agent-seed", str(agentSeed), "--full-statistics"]
+					"--speed-reduction", str(srf), "--min-gap", str(mg), "--agent-seed", str(agentSeed), "--full-statistics"]
 
 				expStartTime = time.time()
 				subprocess.call(args)

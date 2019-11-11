@@ -46,12 +46,6 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
     private String stepLength = "1";
 
     /**
-     * A Java Random object, to make random choices deterministic (if seed provided). Used by the system to shuffle
-     * order of agent execution and agent action application. Used for reproducibility across compute nodes
-     **/
-    private final Random rnd;
-
-    /**
      * A Java Random object, used by agents for action selection
      */
     private final Random agentRnd;
@@ -96,14 +90,6 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         this.netFile = args.hasOption("net-file") ? convertRelativeToAbsolutePath(args.getOptionValue("net-file")) : null;
 
         this.agentRnd = agentRandom;
-        this.rnd = new Random();
-        String systemSeed = args.getOptionValue("random-seed");
-        if (systemSeed != null) {
-            this.rnd.setSeed(Long.parseLong(systemSeed));
-            LOG.fine("Created random object for system using seed" + systemSeed);
-        } else {
-            LOG.fine("No system seed provided. Random operations will really be random");
-        }
 
         if (args.hasOption("step-length"))
             this.stepLength = args.getOptionValue("step-length");
@@ -130,7 +116,6 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         LOG.info(String.format("Tick %d took %d milliseconds. %d agents produced actions\n", l, i, hashMap.size()));
         List<AgentID> processAIDList = new ArrayList<>(hashMap.keySet());
         processAIDList.sort(Comparator.comparing(AgentID::getUuID));
-        Collections.shuffle(processAIDList, this.rnd);
 
         for (AgentID aid : processAIDList) {
             LOG.finer("Processing list of actions for agent " + aid.getUuID());
@@ -279,6 +264,7 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         this.connection.addOption("step-length", this.stepLength);
         this.connection.addOption("start", "1"); // Start right away
         this.connection.addOption("collision.action", this.collisionAction);
+        this.connection.addOption("seed", "42");
 
         if (this.netFile != null)
             this.connection.addOption("net-file", this.netFile);
