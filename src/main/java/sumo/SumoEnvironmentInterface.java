@@ -265,6 +265,11 @@ public class SumoEnvironmentInterface implements TickHookProcessor {
         this.connection.addOption("start", "1"); // Start right away
         this.connection.addOption("collision.action", this.collisionAction);
         this.connection.addOption("seed", "42");
+        
+        String sumo_error_log = System.getenv("SUMO_ERROR_LOG");
+        if (sumo_error_log != null) {
+            this.connection.addOption("error-log", sumo_error_log);
+        }
 
         if (this.netFile != null)
             this.connection.addOption("net-file", this.netFile);
